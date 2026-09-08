@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<title>Modeli — UFC Fight Predictor</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 12.5px;
+  }
+  .cover {
+    height: 250mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    color: #b91c1c;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .cover h1 { font-size: 34px; margin: 0 0 10px 0; line-height: 1.15; }
+  .cover p.subtitle { font-size: 15px; color: #444; max-width: 420px; }
+  .cover .meta { margin-top: 60px; font-size: 11px; color: #777; }
+  h1 { color: #111; font-size: 22px; border-bottom: 3px solid #b91c1c; padding-bottom: 8px; margin-top: 0; }
+  h2 { color: #b91c1c; font-size: 16px; margin-top: 28px; }
+  h3 { font-size: 13.5px; margin-top: 18px; margin-bottom: 6px; }
+  .section { page-break-before: always; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px 0; font-size: 11.5px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 700; color: white; }
+  .badge.good { background: #15803d; }
+  .badge.bad { background: #b91c1c; }
+  .badge.neutral { background: #b45309; }
+  .callout { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 14px; margin: 14px 0; font-size: 12px; }
+  .callout.warn { background: #fffbeb; border-color: #fde68a; }
+  .callout.info { background: #eff6ff; border-color: #bfdbfe; }
+  .callout b { display: block; margin-bottom: 4px; }
+  .example { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 11.5px; font-style: italic; }
+  .analogy { background: #fdf4ff; border-left: 4px solid #a855f7; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+  .analogy b { color: #7e22ce; }
+  .footer-note { margin-top: 30px; font-size: 10px; color: #999; }
+  .model-card {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 16px 0;
+  }
+  .model-card h2 { margin-top: 0; }
+  .model-card .tag {
+    display: inline-block;
+    background: #111;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .pros-cons { display: flex; gap: 16px; margin-top: 12px; }
+  .pros-cons > div { flex: 1; border-radius: 6px; padding: 8px 12px; font-size: 11px; }
+  .pros { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .cons { background: #fef2f2; border: 1px solid #fecaca; }
+  .pros b { color: #15803d; }
+  .cons b { color: #b91c1c; }
+  .spectrum {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    font-size: 11px;
+    text-align: center;
+  }
+  .spectrum > div { flex: 1; padding: 10px; }
+  .spectrum .arrow-label { font-size: 10px; color: #999; margin-top: 4px; }
+  .graf-box {
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 14px;
+  }
+  .graf-box h4 { margin: 0 0 10px 0; font-size: 12px; color: #111; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .bar-label { width: 160px; font-size: 10.5px; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #eee; border-radius: 4px; height: 13px; overflow: hidden; }
+  .bar-fill { height: 100%; }
+  .bar-fill.pos { background: #b91c1c; }
+  .bar-fill.neg { background: #6b7280; }
+  .bar-value { width: 100px; font-size: 10.5px; text-align: right; flex-shrink: 0; }
+  .vote-grid { display: flex; flex-wrap: wrap; gap: 3px; max-width: 460px; margin: 8px 0; }
+  .vote-sq { width: 12px; height: 12px; border-radius: 2px; }
+  .vote-sq.a { background: #b91c1c; }
+  .vote-sq.b { background: #9ca3af; }
+  .legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .callout, .callout.warn, .callout.info, .example, .analogy, .model-card, table, .graf-box {
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">UFC Fight Predictor · Dio 3 od 4</div>
+  <h1>Tri modela i kako svaki "razmišlja"</h1>
+  <p class="subtitle">Bez formula: tri različita pristupa koja koristimo da napravimo predikciju, objašnjena kroz analogije koje svako može razumjeti.</p>
+  <div class="meta">Septembar 2026 · Nastavak na Dio 2 (Kako računar uči)</div>
+</div>
+
+<h1>0. Zašto tri modela, a ne samo jedan</h1>
+<p>U Dijelu 2 smo objasnili kako svaki meč pretvaramo u "karticu" sa oko 28 poređenja između dva borca. Sad dolazi ključno pitanje: <b>šta konkretno radi s tom karticom da bi napravilo predikciju?</b></p>
+<p>Umjesto da se oslonimo na samo jedan pristup, koristimo <b>tri različita "načina razmišljanja"</b> — od najjednostavnijeg do najsloženijeg. Razlog je jednostavan: nijedan pristup nije univerzalno najbolji za svaki problem, pa je poštenije isprobati nekoliko i uporediti ih (rezultati tog poređenja su tema Dijela 4).</p>
+
+<div class="spectrum">
+  <div style="background:#eff6ff; border-radius:8px;">
+    <b>1. Logistička regresija</b>
+    <div class="arrow-label">najjednostavniji, kao formula</div>
+  </div>
+  <div style="font-size:20px; color:#ccc;">→</div>
+  <div style="background:#fef9c3; border-radius:8px;">
+    <b>2. Random Forest</b>
+    <div class="arrow-label">"vijeće" od stotine mini-sudija</div>
+  </div>
+  <div style="font-size:20px; color:#ccc;">→</div>
+  <div style="background:#fee2e2; border-radius:8px;">
+    <b>3. LightGBM</b>
+    <div class="arrow-label">tim koji uči na greškama, iznova i iznova</div>
+  </div>
+</div>
+
+<div class="section">
+<h1>1. Logistička regresija — "formula bodovanja"</h1>
+<div class="model-card">
+<span class="tag">MODEL 1 · NAJJEDNOSTAVNIJI</span>
+<p>Zamisli da svakom poređenju sa "kartice" (razlika u godinama, u nizu pobjeda, u prosjeku udaraca...) dodijeliš određenu <b>težinu</b> — koliko je taj podatak bitan. Zatim sve pomnožiš sa svojom težinom i saberš u jedan ukupan zbir. Što je zbir veći, to je veća vjerovatnoća da pobjeđuje Borac A.</p>
+
+<div class="analogy">
+<b>Analogija: odobravanje kredita u banci</b><br>
+Banka kad odlučuje da li da ti odobri kredit, boduje razne faktore — platu, kreditnu istoriju, staž na poslu — svaki sa svojom "težinom", pa sabere ukupan skor. Ako je skor iznad neke granice, kredit se odobrava. Logistička regresija radi potpuno isto: računar sam, gledajući hiljade starih mečeva, odredi <b>koliko je "teška"</b> svaka pojedina razlika (npr. otkrije da je razlika u godinama vrlo "teška", a razlika u visini gotovo "lagana" — vidjeli smo to i u konkretnom primjeru u Dijelu 2).
+</div>
+
+<div class="pros-cons">
+<div class="pros"><b>✔ Prednost</b>Vrlo lako je objasniti tačno ZAŠTO je model nešto zaključio — samo pogledaš koje su težine najveće. Transparentan i brz.</div>
+<div class="cons"><b>✖ Mana</b>Pretpostavlja da svaki faktor "vuče" uvijek u istom pravcu, bez obzira na ostale. Teže hvata situacije tipa "ovo je bitno SAMO kada se poklopi sa nečim drugim".</div>
+</div>
+
+<div class="graf-box">
+<h4>📊 Primjer u brojkama: Jon Jones vs. Alex Pereira (isti par kao u Dijelu 2)</h4>
+<p style="font-size:11px; margin-top:0;">Ovo su <b>stvarni bodovi</b> koje je istrenirani model dodijelio svakoj razlici sa "kartice" za ovaj konkretan meč (crveno = gura ka pobjedi Jonesa, sivo = gura ka pobjedi Pereire):</p>
+<div class="bar-row"><div class="bar-label">Niz pobjeda</div><div class="bar-track"><div class="bar-fill pos" style="width:100%;"></div></div><div class="bar-value">+1.18 (Jones)</div></div>
+<div class="bar-row"><div class="bar-label">Broj pobjeda do sada</div><div class="bar-track"><div class="bar-fill pos" style="width:62%;"></div></div><div class="bar-value">+0.73 (Jones)</div></div>
+<div class="bar-row"><div class="bar-label">Težina</div><div class="bar-track"><div class="bar-fill pos" style="width:21%;"></div></div><div class="bar-value">+0.25 (Jones)</div></div>
+<div class="bar-row"><div class="bar-label">Prosjek obaranja</div><div class="bar-track"><div class="bar-fill pos" style="width:17%;"></div></div><div class="bar-value">+0.20 (Jones)</div></div>
+<div class="bar-row"><div class="bar-label">Raspon ruku</div><div class="bar-track"><div class="bar-fill pos" style="width:17%;"></div></div><div class="bar-value">+0.20 (Jones)</div></div>
+<div class="bar-row"><div class="bar-label">Broj poraza do sada</div><div class="bar-track"><div class="bar-fill pos" style="width:15%;"></div></div><div class="bar-value">+0.18 (Jones)</div></div>
+<div class="bar-row"><div class="bar-label">Vrijeme kontrole</div><div class="bar-track"><div class="bar-fill neg" style="width:14%;"></div></div><div class="bar-value">−0.17 (Pereira)</div></div>
+<p style="font-size:11px; margin-bottom:0;">Kad se svi bodovi (uključujući i one manje bitne, van liste) saberu, ukupan zbir odgovara <b>93.7% šanse da pobijedi Jon Jones</b> — što se poklapa sa stvarnom predikcijom aplikacije iz Dijela 2. Primijeti kako "niz pobjeda" nosi ubjedljivo najviše bodova, tačno kao što smo vidjeli u analizi važnosti podataka (Dio 4).</p>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h1>2. Random Forest — "vijeće od 300 mini-sudija"</h1>
+<div class="model-card">
+<span class="tag">MODEL 2 · GRUPNO ODLUČIVANJE</span>
+<p>Ovaj pristup ne pravi jednu formulu, nego kreira <b>300 nezavisnih "mini-sudija"</b>. Svaki mini-sudija gleda samo dio kartice (nasumično odabrane podatke) i donosi svoju odluku postavljajući niz jednostavnih pitanja — "Da li je razlika u godinama veća od 5? Ako da, pitaj dalje ovo, ako ne, pitaj ono drugo..." — sve dok ne dođe do zaključka. Na kraju se sakupe odluke svih 300 mini-sudija i pobjeđuje ono što je većina rekla.</p>
+
+<div class="analogy">
+<b>Analogija: žiri od 300 ljudi</b><br>
+Zamisli takmičenje gdje umjesto jednog sudije glasa 300 ljudi, i svako gleda malo drugačiji ugao problema. Pojedinačno, neki od njih mogu pogriješiti, ali kad se uzme glasanje cijele grupe, rezultat je obično pouzdaniji nego mišljenje samo jedne osobe.
+</div>
+
+<div class="pros-cons">
+<div class="pros"><b>✔ Prednost</b>Bolje hvata složene kombinacije faktora (npr. "mlad borac SA dobrim nizom pobjeda je posebno opasan" — kombinacija dva faktora zajedno).</div>
+<div class="cons"><b>✖ Mana</b>Teže je objasniti tačno zašto je odlučio baš tako (300 "glasova" je teško ručno pratiti). Kao što ćemo vidjeti u Dijelu 4, njegovo "glasanje" ponekad zna biti neopravdano jednostrano — praktično uvijek glasa za najčešću opciju, čak i kad to nije najbolja procjena.</div>
+</div>
+
+<div class="graf-box">
+<h4>📊 Primjer u brojkama: Jon Jones vs. Alex Pereira</h4>
+<p style="font-size:11px; margin-top:0;">Pustili smo isti par kroz svih 300 mini-sudija pojedinačno i prebrojali njihove glasove:</p>
+<p style="font-size:20px; font-weight:800; margin:6px 0;"><span style="color:#b91c1c;">230 glasova</span> <span style="color:#999; font-weight:400; font-size:13px;">za Jonesa</span> &nbsp;·&nbsp; <span style="color:#6b7280;">70 glasova</span> <span style="color:#999; font-weight:400; font-size:13px;">za Pereiru</span></p>
+<div class="vote-grid">
+<!-- 30 squares, 23 red (Jones) : 7 gray (Pereira), representing 230:70 scaled to 30 -->
+<div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq a"></div><div class="vote-sq b"></div><div class="vote-sq b"></div><div class="vote-sq b"></div><div class="vote-sq b"></div><div class="vote-sq b"></div><div class="vote-sq b"></div><div class="vote-sq b"></div>
+</div>
+<p style="font-size:10px; color:#666; margin:2px 0 10px 0;"><span class="legend-dot" style="background:#b91c1c;"></span>glasao za Jonesa &nbsp;&nbsp;<span class="legend-dot" style="background:#9ca3af;"></span>glasao za Pereiru &nbsp;&nbsp;(svaki kvadrat = 10 mini-sudija)</p>
+<p style="font-size:11px; margin-bottom:0;">230/300 = <b>76.7%</b> — to je tačno vjerovatnoća koju ovaj model prijavljuje za pobjedu Jonesa. Za razliku od Logističke regresije (93.7%), Random Forest je ovdje malo "opreznije" siguran — ali oba modela se slažu da je Jones favorit.</p>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h1>3. LightGBM — "tim koji uči na svojim greškama"</h1>
+<div class="model-card">
+<span class="tag">MODEL 3 · NAJSLOŽENIJI</span>
+<p>Ovaj pristup radi u krugovima. Prvi "pokušaj" napravi grubu, jednostavnu procjenu za sve mečeve odjednom. Zatim se pogleda <b>gdje je taj pokušaj najviše pogriješio</b>, i sljedeći "pokušaj" se fokusira baš na popravljanje tih grešaka. Treći pokušaj ispravlja ono što je drugi propustio, i tako dalje — u našem slučaju, ovo se ponavlja 300 puta. Konačna odluka je zbir svih tih malih, postepenih popravki.</p>
+
+<div class="analogy">
+<b>Analogija: tim ljekara koji redom pregledaju pacijenta</b><br>
+Prvi ljekar da grubu, početnu dijagnozu. Drugi ljekar se fokusira baš na simptome koje je prvi možda pogrešno protumačio. Treći ispravlja ono što su prva dva propustila. Svaki sljedeći se ne bavi cijelim slučajem iznova — samo popravlja greške prethodnih. Krajnja dijagnoza je zbir svih tih postepenih popravki.
+</div>
+
+<div class="pros-cons">
+<div class="pros"><b>✔ Prednost</b>Često daje najbolji balans između toga da bude tačan I da poštenо priznaje koliko je siguran u svoju procjenu (npr. kad kaže "70% siguran", to stvarno treba da znači tačno u otprilike 70% takvih slučajeva — više o ovome u Dijelu 4).</div>
+<div class="cons"><b>✖ Mana</b>Najsloženiji od sva tri — najteže je "ručno" provjeriti logiku iza pojedinačne odluke. Zahtijeva i najviše pažnje da se ne "pretjera" u učenju (previše krugova popravki na malom broju podataka može dovesti do toga da model "nauči napamet" umjesto da stvarno razumije obrazac).</div>
+</div>
+
+<div class="graf-box">
+<h4>📊 Primjer u brojkama: Jon Jones vs. Alex Pereira</h4>
+<p style="font-size:11px; margin-top:0;">Ovdje se lijepo vidi sama ideja "popravki iznova i iznova" — pratili smo kako se procjena mijenja kako model dodaje sve više krugova popravki (stabala):</p>
+<svg viewBox="0 0 500 180" style="width:100%; max-width:480px; display:block; margin:0 auto;">
+  <line x1="40" y1="20" x2="40" y2="160" stroke="#ccc" stroke-width="1"/>
+  <line x1="40" y1="160" x2="470" y2="160" stroke="#ccc" stroke-width="1"/>
+  <line x1="40" y1="146" x2="470" y2="146" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="474" y="150" font-size="9" fill="#999">50%</text>
+  <text x="10" y="32" font-size="9" fill="#999">95%</text>
+  <text x="10" y="164" font-size="9" fill="#999">45%</text>
+  <polyline points="40,144 87,132 133,126 180,98 227,71 273,52 320,44 367,38 413,36 460,28" fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+  <circle cx="40" cy="144" r="3.5" fill="#b91c1c"/>
+  <circle cx="180" cy="98" r="3.5" fill="#b91c1c"/>
+  <circle cx="460" cy="28" r="4.5" fill="#b91c1c"/>
+  <text x="30" y="176" font-size="9" fill="#666">1 stablo</text>
+  <text x="160" y="176" font-size="9" fill="#666">25 stabala</text>
+  <text x="410" y="176" font-size="9" fill="#666">300 stabala</text>
+  <text x="20" y="140" font-size="9.5" font-weight="700" fill="#b91c1c">50.7%</text>
+  <text x="415" y="20" font-size="9.5" font-weight="700" fill="#b91c1c">92.0%</text>
+</svg>
+<p style="font-size:11px; margin-bottom:0;">Nakon samo 1 stabla, procjena je gotovo čisto nagađanje (50.7%) — model tek počinje. Svaki sljedeći krug popravki gura procjenu sve više prema stvarnom zaključku, dok se nakon svih 300 krugova ne "smiri" na konačnih <b>92.0% šanse za pobjedu Jonesa</b> — vrlo blizu procjeni Logističke regresije (93.7%) i Random Forest-a (76.7%).</p>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h1>4. Kako provjeravamo koji je model zapravo dobar</h1>
+<p>Nije dovoljno da model kaže "ja sam tačan" — moramo to nezavisno provjeriti, na pravi, pošten način.</p>
+
+<div class="analogy">
+<b>Analogija: pravi ispit, ne "prepisivanje"</b><br>
+Zamisli učenika koji uči iz udžbenika sa 100 zadataka. Ako ga na ispitu pitaš baš te iste zadatke, naravno da će sve tačno riješiti — ali to ne dokazuje da <i>razumije</i> gradivo, samo da ih je zapamtio. Pravi test znanja je da ga pitaš <b>nove zadatke koje nikad prije nije vidio</b>, ali koji su iz iste oblasti.
+</div>
+
+<p>Mi radimo potpuno isto: od svih 16 754 "primjera za učenje" (iz Dijela 2), model trenirama samo na <b>80% mečeva</b> ("udžbenik") — preostalih <b>20% mečeva</b> ("ispit") sistem tokom učenja nikad ne vidi. Tek na kraju ga testiramo na tih 20% i gledamo koliko je stvarno pogodio.</p>
+
+<div class="callout warn">
+<b>⚠ Pažljivo s "blizancima" iz Dijela 2</b>
+Sjeti se — svaki meč u podacima postoji dvaput (original + zamijenjene strane, iz Dijela 2 poglavlja 3). Pobrinuli smo se da obje verzije ISTOG meča uvijek završe zajedno — ili obje u "udžbeniku", ili obje na "ispitu", nikad razdvojene. Kad ne bismo pazili na ovo, model bi mogao "prepoznati" svog blizanca s ispita i lažno izgledati pametnije nego što jeste.
+</div>
+
+<div class="callout">
+<b>✔ Dvostruka provjera radi sigurnosti</b>
+Da budemo još sigurniji, radimo ovu podjelu na "udžbenik/ispit" <b>5 puta</b>, svaki put s drugačijom nasumičnom podjelom, i gledamo da li model dosljedno postiže sličan rezultat u svih 5 pokušaja. Ako rezultat mnogo skače od pokušaja do pokušaja, to je znak da mu ne možemo baš vjerovati — u Dijelu 4 ćemo vidjeti da su naši modeli prilično dosljedni.
+</div>
+</div>
+
+<div class="section">
+<h1>5. Zašto ti u aplikaciji možeš birati model</h1>
+<p>Pošto se pokazalo (Dio 4) da nijedan od ova tri pristupa nije "pobjednik u svemu" — svaki ima svoje prednosti zavisno od pitanja koje postavljaš (ko pobjeđuje, ili kako se meč završava) — odlučili smo da ti damo izbor umjesto da ti nametnemo samo jedan model. U aplikaciji možeš isprobati sva tri i uporediti njihove predikcije za isti meč.</p>
+</div>
+
+<div class="section">
+<h1>6. Sažetak</h1>
+<table>
+  <tr><th>Model</th><th>Kako razmišlja (jednom rečenicom)</th><th>Glavna prednost</th></tr>
+  <tr><td>Logistička regresija</td><td>Sabere "otežane" razlike u jedan zbir</td><td>Transparentan, lako objasniti zašto</td></tr>
+  <tr><td>Random Forest</td><td>300 mini-sudija glasa, pobjeđuje većina</td><td>Hvata složenije kombinacije faktora</td></tr>
+  <tr><td>LightGBM</td><td>Stotine krugova postepenih popravki grešaka</td><td>Najbolji balans tačnosti i poštenog priznavanja nesigurnosti</td></tr>
+</table>
+<table>
+  <tr><th>Pitanje</th><th>Odgovor</th></tr>
+  <tr><td>Kako provjeravamo da model stvarno "razumije", a ne samo "pamti"?</td><td>Testiramo ga na 20% mečeva koje nikad nije vidio tokom učenja</td></tr>
+  <tr><td>Zašto ponavljamo provjeru 5 puta?</td><td>Da vidimo da li je rezultat dosljedan, ne samo "srećan pokušaj"</td></tr>
+  <tr><td>Zašto nudimo izbor između tri modela u aplikaciji?</td><td>Nijedan nije univerzalno najbolji — zavisi od pitanja (vidi Dio 4)</td></tr>
+</table>
+
+<div class="callout">
+<b>Šta slijedi u sljedećem, posljednjem dokumentu</b>
+U Dijelu 4 konačno pokazujemo <i>stvarne rezultate</i> — koliko je svaki model tačan, gdje griješi, i jedan iznenađujući nalaz: model sa "najboljom ocjenom" nije uvijek i najkorisniji.
+</div>
+</div>
+
+<div class="footer-note">UFC Fight Predictor — interni dokument, dio 3/4 (Modeli)</div>
+
+</body>
+</html>

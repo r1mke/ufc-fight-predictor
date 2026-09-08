@@ -102,3 +102,80 @@ export interface PredictResponse {
   fighter1: FighterDetail;
   fighter2: FighterDetail;
 }
+
+// --- Data acquisition (scraping / manual submission / review) -------------
+
+export interface NewFighterInfo {
+  name: string;
+  height_in: number | null;
+  reach_in: number | null;
+  weight_lbs: number | null;
+  stance: string | null;
+  dob: string | null;
+}
+
+export type FightMethod = "KO_TKO" | "Submission" | "Decision";
+
+export interface GranularStats {
+  f1_sig_landed: number | null;
+  f1_sig_att: number | null;
+  f2_sig_landed: number | null;
+  f2_sig_att: number | null;
+  f1_td_landed: number | null;
+  f1_td_att: number | null;
+  f2_td_landed: number | null;
+  f2_td_att: number | null;
+  f1_ctrl_sec: number | null;
+  f2_ctrl_sec: number | null;
+  f1_kd: number | null;
+  f2_kd: number | null;
+  f1_sub_att: number | null;
+  f2_sub_att: number | null;
+}
+
+export interface PendingFightCreate extends GranularStats {
+  fighter1_id: string | null;
+  fighter2_id: string | null;
+  fighter1_name: string;
+  fighter2_name: string;
+  weight_class: string;
+  method: FightMethod;
+  winner_name: string;
+  event_date: string;
+  is_title_fight: boolean;
+  new_fighter_1: NewFighterInfo | null;
+  new_fighter_2: NewFighterInfo | null;
+  source_url: string | null;
+}
+
+export type PendingFightUpdate = Partial<PendingFightCreate>;
+
+export interface PendingFight extends PendingFightCreate {
+  id: string;
+  source: "manual" | "scraped";
+  status: "pending" | "approved" | "rejected";
+  submitted_at: string;
+  reviewed_at: string | null;
+}
+
+export interface JobStatus {
+  status: "idle" | "running" | "done" | "error";
+  started_at: string | null;
+  finished_at: string | null;
+  error_message: string | null;
+  result_summary: string | null;
+}
+
+export type ScrapeStatus = JobStatus;
+export type RetrainStatus = JobStatus;
+
+export interface ModelVersion {
+  version_id: string;
+  created_at: string;
+  is_current: boolean;
+  metrics_summary: Record<string, Record<string, { accuracy: number; log_loss: number }>>;
+}
+
+export interface ModelVersionsResponse {
+  versions: ModelVersion[];
+}

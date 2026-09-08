@@ -1,0 +1,41 @@
+Ime,Kategorija,Pobjede,Porazi,Neriješeno,Napomena
+Jon Jones,Light Heavyweight,28,1,0,Kompletni podaci; dugi niz pobjeda
+Alex Pereira,Light Heavyweight,13,3,0,Kompletni podaci
+Jiri Prochazka,Light Heavyweight,32,5,1,Kompletni podaci
+Magomed Ankalaev,Light Heavyweight,21,2,1,Kompletni podaci
+Israel Adesanya,Middleweight,24,5,0,Kompletni podaci
+Sean Strickland,Middleweight,30,7,0,Kompletni podaci
+Dricus Du Plessis,Middleweight,23,3,0,Kompletni podaci
+Robert Whittaker,Middleweight,27,9,0,Kompletni podaci
+Islam Makhachev,Lightweight,28,1,0,Kompletni podaci
+Charles Oliveira,Lightweight,37,11,0,Kompletni podaci
+Khabib Nurmagomedov,Lightweight,29,0,0,Kompletni podaci; nikad poražen
+Dustin Poirier,Lightweight,30,10,0,Kompletni podaci
+Justin Gaethje,Lightweight,27,5,0,Kompletni podaci
+Conor McGregor,Featherweight,22,6,0,Kompletni podaci
+Max Holloway,Featherweight,27,9,0,Kompletni podaci
+Alexander Volkanovski,Featherweight,28,4,0,Kompletni podaci
+Ilia Topuria,Featherweight,17,0,0,Kompletni podaci; nikad poražen
+Leon Edwards,Welterweight,22,6,0,Kompletni podaci
+Kamaru Usman,Welterweight,21,4,0,Kompletni podaci
+Belal Muhammad,Welterweight,24,5,0,Kompletni podaci
+Colby Covington,Welterweight,17,5,0,Kompletni podaci
+Stephen Thompson,Welterweight,17,9,1,Kompletni podaci
+Gilbert Burns,Welterweight,22,9,0,Kompletni podaci
+Vicente Luque,Welterweight,23,12,1,Kompletni podaci
+Merab Dvalishvili,Bantamweight,21,5,0,Kompletni podaci
+Aljamain Sterling,Bantamweight,25,5,0,Kompletni podaci
+Petr Yan,Bantamweight,20,5,0,Kompletni podaci
+Sean O'Malley,Bantamweight,19,3,0,Kompletni podaci
+Henry Cejudo,Flyweight,16,6,0,Kompletni podaci
+Deiveson Figueiredo,Flyweight,25,6,1,Kompletni podaci
+Brandon Moreno,Flyweight,23,10,2,Kompletni podaci
+Tom Aspinall,Heavyweight,15,3,0,Kompletni podaci
+Amanda Nunes,Women's Bantamweight,23,5,0,Kompletni podaci
+Ronda Rousey,Women's Bantamweight,12,2,0,Kompletni podaci
+Valentina Shevchenko,Women's Flyweight,26,4,1,Kompletni podaci
+Alexa Grasso,Women's Flyweight,16,5,1,Kompletni podaci
+Zhang Weili,Women's Strawweight,26,4,0,Kompletni podaci
+Rose Namajunas,Women's Strawweight,15,8,0,Kompletni podaci
+Marloes Coenen,Unknown,23,8,0,EDGE CASE: nedostaje stav (Stance)
+Tom Aaron,Unknown,5,3,0,EDGE CASE: nedostaje visina/reach/stav i 0 UFC mečeva u historiji (dobar test za borca "bez forme")

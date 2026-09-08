@@ -1,0 +1,9 @@
+Borac_1,Borac_2,Kategorija,Zasto_testirati
+Jon Jones,Alex Pereira,Light Heavyweight,Golden path - primjer korišten u svim dokumentima (Dio 2-4)
+Islam Makhachev,Charles Oliveira,Lightweight,Dva vrhunska borca slične klase - test blizu 50/50 predikcije
+Amanda Nunes,Valentina Shevchenko,Women's Bantamweight,REVANŠ - već su se borile 2 puta (2016 i 2017) - test pitanja iz Dijela 2 o revanšu
+Tom Aaron,Jon Jones,Light Heavyweight,EDGE CASE - borac sa 0 UFC mečeva i procijenjenim podacima protiv šampiona
+Marloes Coenen,Amanda Nunes,Women's Bantamweight,EDGE CASE - borac sa nepoznatim stavom (Stance)
+Khabib Nurmagomedov,Conor McGregor,Lightweight,Stvaran istorijski meč (2018) - uporedi predikciju sa stvarnim ishodom (Khabib pobijedio predajom)
+Ilia Topuria,Max Holloway,Featherweight,Stvaran istorijski meč (2024) - uporedi sa stvarnim ishodom (Topuria pobijedio nokautom)
+Sean O'Malley,Merab Dvalishvili,Bantamweight,Test različitih stilova (udarač vs. grepler) - dobar test za "kako se meč završava"

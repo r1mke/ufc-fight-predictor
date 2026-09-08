@@ -3,8 +3,13 @@ __pycache__/
 .venv/
 venv/
 data/processed/
+data/pending/*
+!data/pending/.gitkeep
+data/raw/user_submitted_*.csv
 models/*.joblib
 models/*.json
 !models/.gitkeep
+models_archive/*
+!models_archive/.gitkeep
 .env
 .pytest_cache/

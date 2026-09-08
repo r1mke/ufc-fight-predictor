@@ -79,3 +79,11 @@ def get_prediction_service() -> PredictionService:
     if _instance is None:
         _instance = PredictionService(get_fighter_service())
     return _instance
+
+
+def reset_instance() -> None:
+    """Drops the cached singleton so the next call to get_prediction_service()
+    reloads models/metrics.json from disk - used after a retrain or a model
+    version restore."""
+    global _instance
+    _instance = None

@@ -103,10 +103,22 @@ def compute_point_in_time_stats(history_long: pd.DataFrame) -> pd.DataFrame:
     df["days_since_last_fight"] = df["days_since_last_fight"].fillna(-1)
 
     for col in NUMERIC_FORM_STATS:
-        cum_col = g[col].apply(lambda s: s.cumsum()).reset_index(level=0, drop=True)
-        prior_sum = cum_col - df[col]
+        # Some historical fights (e.g. manually added or scraped-but-unparsed
+        # rows) may have this stat missing. A missing value must not silently
+        # bias the average - it contributes neither to the sum nor to the
+        # count of fights used as the denominator (NOT the same as
+        # prior_fight_count, which counts every prior fight regardless of
+        # whether this particular stat is known for it).
+        filled_col = df[col].fillna(0)
+        cum_col = filled_col.groupby(df["fighter_name"]).cumsum()
+        prior_sum = cum_col - filled_col
+
+        known = df[col].notna().astype(int)
+        cum_known = known.groupby(df["fighter_name"]).cumsum()
+        prior_known_count = cum_known - known
+
         with np.errstate(invalid="ignore", divide="ignore"):
-            df[f"prior_avg_{col}"] = (prior_sum / df["prior_fight_count"].replace(0, np.nan)).fillna(0)
+            df[f"prior_avg_{col}"] = (prior_sum / prior_known_count.replace(0, np.nan)).fillna(0)
 
     df["is_debut"] = df["prior_fight_count"] == 0
 
@@ -143,7 +155,8 @@ def aggregate_current_stats(fighter_history: pd.DataFrame) -> dict:
         "win_streak": streak, "days_since_last_fight": days_since, "is_debut": False,
     }
     for c in NUMERIC_FORM_STATS:
-        result[f"prior_avg_{c}"] = float(sorted_hist[c].mean())
+        mean = sorted_hist[c].mean()  # skipna=True by default - already NaN-aware
+        result[f"prior_avg_{c}"] = float(mean) if pd.notna(mean) else 0.0
     return result
 
 
@@ -304,7 +317,10 @@ def build_training_table(fighters_clean: pd.DataFrame, fights_clean: pd.DataFram
     return training_table.reset_index(drop=True), imputation_params
 
 
-if __name__ == "__main__":
+def build_and_save():
+    """Reads the cleaned parquet files, builds the training table, and writes
+    training_table.parquet + imputation.json. Shared by the CLI entry point
+    below and app.services.retrain_service."""
     import json
 
     from app.config import (
@@ -317,8 +333,12 @@ if __name__ == "__main__":
     table, imputation_params = build_training_table(fighters, fights)
     table.to_parquet(TRAINING_TABLE_PARQUET, index=False)
     IMPUTATION_JSON.write_text(json.dumps(imputation_params, indent=2))
+    return table
+
+
+if __name__ == "__main__":
+    table = build_and_save()
 
     print(f"training_table: {len(table)} rows, {len(ALL_FEATURE_COLUMNS)} raw feature columns")
     print(f"winner_is_a distribution:\n{table['winner_is_a'].value_counts()}")
     print(f"method_class distribution:\n{table['method_class'].value_counts()}")
-    print(f"dropped rows with unmatched fighter (name join failed): {2 * len(fights) - len(table)}")

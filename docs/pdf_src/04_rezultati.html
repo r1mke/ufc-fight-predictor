@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<title>Rezultati — UFC Fight Predictor</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 12.5px;
+  }
+  .cover {
+    height: 250mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    color: #b91c1c;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .cover h1 { font-size: 34px; margin: 0 0 10px 0; line-height: 1.15; }
+  .cover p.subtitle { font-size: 15px; color: #444; max-width: 420px; }
+  .cover .meta { margin-top: 60px; font-size: 11px; color: #777; }
+  h1 { color: #111; font-size: 22px; border-bottom: 3px solid #b91c1c; padding-bottom: 8px; margin-top: 0; }
+  h2 { color: #b91c1c; font-size: 16px; margin-top: 28px; }
+  h3 { font-size: 13.5px; margin-top: 18px; margin-bottom: 6px; }
+  .section { page-break-before: always; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px 0; font-size: 11.5px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 700; color: white; }
+  .badge.good { background: #15803d; }
+  .badge.bad { background: #b91c1c; }
+  .badge.neutral { background: #b45309; }
+  .callout { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 14px; margin: 14px 0; font-size: 12px; }
+  .callout.warn { background: #fffbeb; border-color: #fde68a; }
+  .callout.info { background: #eff6ff; border-color: #bfdbfe; }
+  .callout.key { background: #fef2f2; border: 1px solid #fecaca; }
+  .callout b { display: block; margin-bottom: 4px; }
+  .example { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 11.5px; font-style: italic; }
+  .analogy { background: #fdf4ff; border-left: 4px solid #a855f7; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+  .analogy b { color: #7e22ce; }
+  .footer-note { margin-top: 30px; font-size: 10px; color: #999; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .bar-label { width: 190px; font-size: 11px; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #eee; border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #b91c1c; }
+  .bar-value { width: 60px; font-size: 11px; text-align: right; flex-shrink: 0; }
+  .model-row { display: flex; gap: 10px; margin: 10px 0; }
+  .model-row > div { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; }
+  .model-row .num { font-size: 22px; font-weight: 800; color: #b91c1c; }
+  .model-row .lbl { font-size: 10.5px; color: #666; }
+  .callout, .callout.warn, .callout.info, .callout.key, .example, .analogy, .model-row, table {
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">UFC Fight Predictor · Dio 4 od 4</div>
+  <h1>Rezultati: šta radi dobro, šta ne, i zašto</h1>
+  <p class="subtitle">Posljednji dio serijala: stvarni brojevi, i jedno iznenađujuće otkriće — model koji izgleda "najbolje" na papiru nije uvijek i najkorisniji.</p>
+  <div class="meta">Septembar 2026 · Nastavak na Dio 3 (Modeli)</div>
+</div>
+
+<h1>0. Dva pitanja, dva različita stepena težine</h1>
+<p>Podsjetnik: aplikacija odgovara na <b>dva odvojena pitanja</b> za svaki meč:</p>
+<ul>
+  <li><b>Ko pobjeđuje?</b> — Borac A ili Borac B</li>
+  <li><b>Kako se meč završava?</b> — nokaut (KO/TKO), predaja (Submission), ili odluka sudija (Decision)</li>
+</ul>
+<p>Testirali smo sva tri modela na <b>3352 meča koje nikad nisu vidjeli tokom učenja</b> (pravi "ispit", objašnjeno u Dijelu 3). Kao što ćemo vidjeti, ova dva pitanja nisu podjednako teška — i tu leži najvažnija lekcija cijelog dokumenta.</p>
+
+<div class="section">
+<h1>1. Rezultati — "Ko pobjeđuje?"</h1>
+<p>Pošto smo (iz Dijela 2) osigurali da je tačno pola test-mečeva "Borac A pobjeđuje" a pola "Borac B pobjeđuje", <b>čisto nagađanje bi pogodilo tačno 50%</b> — to nam je polazna linija za poređenje.</p>
+
+<div class="model-row">
+  <div><div class="num">62.7%</div><div class="lbl">Logistička regresija</div></div>
+  <div><div class="num">61.7%</div><div class="lbl">Random Forest</div></div>
+  <div><div class="num">60.7%</div><div class="lbl">LightGBM</div></div>
+</div>
+<p style="text-align:center; color:#666; font-size:11px; margin-top:-8px;">(Tačnost na 3352 meča koje modeli nikad nisu vidjeli. Čisto nagađanje = 50%.)</p>
+
+<div class="callout">
+<b>✔ Nalaz: sva tri su bolja od nagađanja, a najjednostavniji je najbolji</b>
+Logistička regresija (Dio 3, "formula bodovanja") je — pomalo iznenađujuće — najtačnija za ovo pitanje. To sugeriše da je pitanje "ko je bolji borac" prilično <i>pravolinijski</i> problem: stariji/iskusniji/u boljoj formi borac generalno pobjeđuje otprilike proporcionalno razlici, bez potrebe za "vijećem" ili "timom koji uči na greškama".
+</div>
+
+<h2>Koliko možemo vjerovati kad model kaže "X% siguran"?</h2>
+<div class="analogy">
+<b>Šta znači "pošteno" priznavanje sigurnosti</b><br>
+Zamisli da model kaže "Borac A ima 80% šanse da pobijedi". Ako pogledamo SVE mečeve gdje je bilo koji model rekao otprilike "80% siguran", i Borac A se stvarno pojavio kao pobjednik u oko 80 od 100 takvih mečeva — model je pošten prema svojoj vlastitoj sigurnosti. Ako bi se pobjednik pojavio u samo, recimo, 55 od 100 takvih slučajeva, model bi bio <b>previše samouvjeren</b> — kaže da je siguran, a zapravo nije toliko.
+</div>
+<p>I po ovom mjerilu, Logistička regresija je opet najbolja — njeni procenti pouzdanosti najviše odgovaraju stvarnosti. Random Forest i LightGBM su malo "preambiciozniji" u svojim procjenama.</p>
+
+<h2>Šta najviše utiče na to ko pobjeđuje</h2>
+<p>Pogledali smo koji podaci sa "kartice" (Dio 2) najjače razdvajaju pobjednike od gubitnika:</p>
+<div class="bar-row"><div class="bar-label">Razlika u godinama</div><div class="bar-track"><div class="bar-fill" style="width:100%;"></div></div><div class="bar-value">najjače</div></div>
+<div class="bar-row"><div class="bar-label">Trenutni niz pobjeda</div><div class="bar-track"><div class="bar-fill" style="width:67%;"></div></div><div class="bar-value">jako</div></div>
+<div class="bar-row"><div class="bar-label">Prosjek obaranja protivnika</div><div class="bar-track"><div class="bar-fill" style="width:62%;"></div></div><div class="bar-value">jako</div></div>
+<div class="bar-row"><div class="bar-label">Prosjek vremena kontrole</div><div class="bar-track"><div class="bar-fill" style="width:36%;"></div></div><div class="bar-value">srednje</div></div>
+<div class="bar-row"><div class="bar-label">Raspon ruku</div><div class="bar-track"><div class="bar-fill" style="width:19%;"></div></div><div class="bar-value">slabo</div></div>
+<div class="bar-row"><div class="bar-label">Visina / Težina</div><div class="bar-track"><div class="bar-fill" style="width:7%;"></div></div><div class="bar-value">skoro nimalo</div></div>
+
+<div class="callout info">
+<b>Podsjeti se na primjer iz Dijela 2</b>
+Kod para Jon Jones / Alex Pereira, najupečatljivije razlike su bile baš niz pobjeda (+21) i vrijeme kontrole (+213 sekundi) — dvije stavke koje su, kako sad vidimo, među najuticajnijim za predikciju pobjednika. Fizički podaci poput visine (razlika = 0) tu nisu bili od velike pomoći.
+</div>
+</div>
+
+<div class="section">
+<h1>2. Rezultati — "Kako se meč završava?" (teže pitanje)</h1>
+<p>Ovdje je "besplatna" polazna linija drugačija: <b>skoro polovina (47.7%)</b> svih mečeva u test skupu se završi odlukom sudija (Decision) — najčešći ishod. Dakle, da neko UVIJEK nagađa "biće odluka sudija", bez ikakvog razmišljanja, bio bi u pravu 47.7% puta.</p>
+
+<div class="model-row">
+  <div><div class="num">48.1%</div><div class="lbl">Logistička regresija</div></div>
+  <div><div class="num">50.2%</div><div class="lbl">Random Forest</div></div>
+  <div><div class="num">44.6%</div><div class="lbl">LightGBM</div></div>
+</div>
+<p style="text-align:center; color:#666; font-size:11px; margin-top:-8px;">(Tačnost. Baseline — uvijek nagađati "Decision" — je 47.7%.)</p>
+
+<p>Na prvi pogled, Random Forest izgleda najbolji (50.2%, jedini iznad baseline-a). Ali kad malo dublje zagrebemo, otkrivamo nešto važno.</p>
+
+<div class="analogy">
+<b>Analogija: sinoptičar koji "nikad ne griješi"</b><br>
+Zamisli sinoptičara u gradu gdje je 9 od 10 dana sunčano. On UVIJEK najavljuje "sunčano", bez obzira na stvarno stanje. Tehnički, u pravu je 90% dana — impresivan procenat! Ali potpuno je beskoristan onog dana kad stvarno pada kiša, jer je nikad ne najavi. Visok "procenat tačnosti" ovdje sakriva da alat uopšte ne radi svoj posao.
+</div>
+
+<div class="callout key">
+<b>⚠ Ključan nalaz: Random Forest gotovo nikad ne prepozna "predaju"</b>
+Kad smo provjerili, od svih mečeva koji su se u stvarnosti završili predajom (Submission), evo koliko ih je svaki model prepoznao:
+<table style="margin-top:8px;">
+<tr><th>Model</th><th>Prepoznao KO/TKO</th><th>Prepoznao Submission</th><th>Prepoznao Odluku</th></tr>
+<tr><td>Logistička regresija</td><td>44.8%</td><td>21.3%</td><td>61.8%</td></tr>
+<tr><td><b>Random Forest</b></td><td>30.6%</td><td><b style="color:#b91c1c;">5.4%</b></td><td>82.5%</td></tr>
+<tr><td>LightGBM</td><td>42.3%</td><td>34.1%</td><td>50.6%</td></tr>
+</table>
+<p style="margin-top:8px; margin-bottom:0;">Random Forest je gotovo naš "sinoptičar" iz primjera gore: skoro uvijek "nagađa" Decision (82.5% takvih slučajeva prepozna) — što mu diže ukupnu tačnost — ali zauzvrat, od svakih 100 pravih pobjeda predajom, prepozna samo <b>5 ili 6</b>. Za nekog ko traži predikciju "hoće li ovo biti predaja", Random Forest je gotovo beskoristan, uprkos najvišoj "sirovoj" tačnosti.</p>
+</div>
+
+<div class="callout">
+<b>✔ Preporuka</b>
+Za pitanje "kako se meč završava", Logistička regresija i LightGBM su smisleniji izbor — obje prepoznaju sve tri opcije razumno dobro, iako im je ukupna tačnost niža od Random Forest-a. <b>Viši procenat nije uvijek bolji model.</b>
+</div>
+
+<h2>Šta najviše utiče na to kako se meč završava</h2>
+<div class="bar-row"><div class="bar-label">Prosjek pogođenih udaraca</div><div class="bar-track"><div class="bar-fill" style="width:100%;"></div></div><div class="bar-value">najjače</div></div>
+<div class="bar-row"><div class="bar-label">Sklonost obaranju protivnika</div><div class="bar-track"><div class="bar-fill" style="width:38%;"></div></div><div class="bar-value">srednje</div></div>
+<div class="bar-row"><div class="bar-label">Vrijeme kontrole</div><div class="bar-track"><div class="bar-fill" style="width:24%;"></div></div><div class="bar-value">srednje</div></div>
+<div class="bar-row"><div class="bar-label">Pokušaji predaje</div><div class="bar-track"><div class="bar-fill" style="width:15%;"></div></div><div class="bar-value">slabo</div></div>
+<div class="bar-row"><div class="bar-label">Visina, težina, broj pobjeda/poraza, niz pobjeda...</div><div class="bar-track"><div class="bar-fill" style="width:0%;"></div></div><div class="bar-value">0 — nimalo</div></div>
+
+<div class="callout info">
+<b>Zanimljiv nalaz</b>
+Fizički podaci i cjelokupan skor karijere (koliko je borac visok/težak, koliko ima pobjeda/poraza) <b>uopšte ne govore ništa</b> o tome KAKO će se meč završiti — logično, jer tvoj rekord ne otkriva tvoj <i>stil</i> borbe. Samo bihevioralni podaci (koliko udara, koliko pokušava obaranja/predaje) nose taj signal. Ovo potvrđuje da su naši podaci i pristup smisleni — model je sam "otkrio" ovu logičnu razliku.
+</div>
+</div>
+
+<div class="section">
+<h1>3. Zašto je "kako se završava" teže pitanje</h1>
+<p>"Ko pobjeđuje" zavisi uglavnom od toga ko je <b>opštenito bolji borac</b> — to je relativno stabilan, predvidljiv obrazac kroz karijeru. "Kako će se ta pobjeda konkretno dogoditi" zavisi od mnogo specifičnijih stvari te konkretne večeri — trenutak greške, sudijska procjena u odluci, "hemija" između dva konkretna stila — stvari koje prosječne karijerne statistike jednostavno ne mogu uhvatiti unaprijed. Ovo nije samo ograničenje našeg sistema — čak i najveći UFC eksperti mnogo lakše pogode pobjednika nego tačan način završetka.</p>
+</div>
+
+<div class="section">
+<h1>4. Šta ovo znači za tebe kao korisnika aplikacije</h1>
+<table>
+  <tr><th>Pitanje</th><th>Preporuka</th></tr>
+  <tr><td>Ko pobjeđuje?</td><td>Rezultatu možeš vjerovati razumno — bolji je od nagađanja za oko 10-13 procentnih poena, iako nikad neće biti savršen (sport je nepredvidiv)</td></tr>
+  <tr><td>Kako se meč završava?</td><td>Uzmi kao grubu naznaku, ne sigurnu stvar. Preporučujemo LightGBM ili Logističku regresiju — ne oslanjaj se samo na Random Forest za ovo pitanje</td></tr>
+  <tr><td>Opšti savjet</td><td>Isprobaj sva tri modela za isti meč. Ako se slažu, to je dobar znak; ako se razilaze, meč je "teško čitljiv" čak i za sistem</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h1>5. Iskrena ograničenja (sažetak iz svih dijelova)</h1>
+<table>
+  <tr><th>Ograničenje</th><th>Objašnjenje</th></tr>
+  <tr><td>Nekoliko imena boraca se preklapa</td><td>7 imena u podacima pripada dvjema različitim stvarnim osobama (Dio 1) — rijetka, ali postojeća nesavršenost u izvornim podacima</td></tr>
+  <tr><td>Manje kategorije su manje pouzdane</td><td>Npr. Women's Featherweight ima svega 30 mečeva u historiji — manje "primjera za učenje" znači manje pouzdanu procjenu tamo</td></tr>
+  <tr><td>Nema "međusobni skor"</td><td>Model ne zna ko je koga već pobijedio u prošlosti (Dio 2) — moguće buduće poboljšanje</td></tr>
+  <tr><td>Testirano na nasumičnim starim mečevima</td><td>Nismo posebno testirali "da li bismo tačno predvidjeli sljedeću sezonu unaprijed" — samo nasumično odabrane mečeve iz cijele historije</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h1>6. Zaključak cijelog serijala</h1>
+<table>
+  <tr><th>Dio</th><th>Šta smo pokrili</th></tr>
+  <tr><td>1 — Podaci</td><td>4455 boraca, 8377 očišćenih mečeva; popravili nedostajuće podatke; izbacili nejasne ishode</td></tr>
+  <tr><td>2 — Kako računar uči</td><td>Gradimo "dosje forme" iz ranijih mečeva; gledamo razlike, ne apsolutne brojke; dupliramo mečeve za fer igru</td></tr>
+  <tr><td>3 — Modeli</td><td>Tri različita pristupa: formula bodovanja, vijeće mini-sudija, tim koji uči na greškama</td></tr>
+  <tr><td>4 — Rezultati (ovaj dokument)</td><td>Ko pobjeđuje: solidno (60-63%). Kako se završava: mnogo teže (44-50%), i model sa najvišim procentom nije uvijek najkorisniji</td></tr>
+</table>
+
+<div class="callout key">
+<b>Glavna poruka cijelog projekta</b>
+Model koji na papiru ima najveći procenat tačnosti <b>nije automatski i najbolji izbor</b> — treba pogledati dublje, i provjeriti da li taj model radi svoj posao pošteno za SVE moguće ishode, ne samo za najčešći. Ista lekcija vrijedi i šire od UFC predikcija — kad god neko hvali "X% tačnosti", vrijedi zapitati se: tačnost <i>za šta tačno</i>, i da li ta brojka sakriva nešto važno.
+</div>
+</div>
+
+<div class="footer-note">UFC Fight Predictor — interni dokument, dio 4/4 (Rezultati) · Kraj serijala</div>
+
+</body>
+</html>

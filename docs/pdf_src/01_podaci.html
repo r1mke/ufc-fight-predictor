@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<title>Podaci — UFC Fight Predictor</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 12.5px;
+  }
+  .cover {
+    height: 250mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    color: #b91c1c;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .cover h1 {
+    font-size: 34px;
+    margin: 0 0 10px 0;
+    line-height: 1.15;
+  }
+  .cover p.subtitle {
+    font-size: 15px;
+    color: #444;
+    max-width: 420px;
+  }
+  .cover .meta {
+    margin-top: 60px;
+    font-size: 11px;
+    color: #777;
+  }
+  h1 { color: #111; font-size: 22px; border-bottom: 3px solid #b91c1c; padding-bottom: 8px; margin-top: 0; }
+  h2 { color: #b91c1c; font-size: 16px; margin-top: 28px; }
+  h3 { font-size: 13.5px; margin-top: 18px; margin-bottom: 6px; }
+  .section { page-break-before: always; }
+  .lead {
+    font-size: 13.5px;
+    background: #fef2f2;
+    border-left: 4px solid #b91c1c;
+    padding: 10px 14px;
+    margin: 14px 0;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px 0; font-size: 11.5px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .good { color: #15803d; font-weight: 600; }
+  .bad { color: #b91c1c; font-weight: 600; }
+  .neutral { color: #92400e; font-weight: 600; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: white;
+  }
+  .badge.good { background: #15803d; color: white; }
+  .badge.bad { background: #b91c1c; color: white; }
+  .badge.neutral { background: #b45309; color: white; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .bar-label { width: 110px; font-size: 11px; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #eee; border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #b91c1c; }
+  .bar-value { width: 50px; font-size: 11px; text-align: right; flex-shrink: 0; }
+  .callout {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 14px 0;
+    font-size: 12px;
+  }
+  .callout.warn {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+  .callout b { display: block; margin-bottom: 4px; }
+  .example {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 11.5px;
+    font-style: italic;
+  }
+  .footer-note { margin-top: 30px; font-size: 10px; color: #999; }
+  .col-count { font-weight: 700; color: #b91c1c; }
+  .callout, .callout.warn, .callout.info, .example, .analogy, .card-mini, table, .timeline {
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">UFC Fight Predictor · Dio 1 od 4</div>
+  <h1>Podaci koje koristimo</h1>
+  <p class="subtitle">Jednostavno objašnjenje: šta imamo, šta je dobro, šta nedostaje, i šta smo morali izbaciti prije nego što računar bilo šta nauči.</p>
+  <div class="meta">Septembar 2026 · Napisano jednostavnim jezikom, bez tehničkih termina</div>
+</div>
+
+<h1>0. O čemu je ovaj dokument</h1>
+<p>Prije nego što napravimo bilo kakvu predikciju, moramo dobro razumjeti podatke koje imamo. Ovaj dokument odgovara na tri pitanja:</p>
+<ul>
+  <li><b>Šta tačno imamo?</b> — dva fajla: jedan o borcima, jedan o mečevima.</li>
+  <li><b>Šta je u njima dobro, a šta problematično?</b> — neki podaci nedostaju, neki se ne mogu koristiti onako kako izgledaju.</li>
+  <li><b>Šta smo morali izbaciti ili popraviti, i zašto?</b></li>
+</ul>
+<p>Nema formula ni statistike u ovom dokumentu — to dolazi kasnije, u dijelu 2 i 3. Ovdje je fokus samo na pitanju: <i>da li su nam podaci uopšte dobra polazna tačka?</i></p>
+
+<div class="section">
+<h1>1. Fajl broj 1 — "Lične karte" boraca</h1>
+<p>Ovaj fajl (<code>ufc_fighters_final.csv</code>) je kao kartoteka: <span class="col-count">4455</span> boraca, po jedan red za svakog, sa njihovim ličnim i karijernim podacima.</p>
+
+<h2>Koje kolone imamo i šta znače</h2>
+<table>
+  <tr><th>Kolona u fajlu</th><th>Šta to znači (jednostavno)</th></tr>
+  <tr><td>Fighter_Name</td><td>Ime i prezime borca</td></tr>
+  <tr><td>Height</td><td>Visina</td></tr>
+  <tr><td>Weight</td><td>Težina</td></tr>
+  <tr><td>Reach</td><td>Raspon ruku — koliko daleko borac dosegne rukom (bitno za udaranje na distanci)</td></tr>
+  <tr><td>Stance</td><td>Borilački stav — npr. "Orthodox" (klasičan, desnoruk) ili "Southpaw" (ljevoruk)</td></tr>
+  <tr><td>DOB</td><td>Datum rođenja</td></tr>
+  <tr><td>Wins / Losses / Draws</td><td>Pobjede / Porazi / Neriješeni mečevi (ukupno u karijeri)</td></tr>
+  <tr><td>SLpM</td><td>Koliko udaraca u prosjeku zadaje po minuti borbe</td></tr>
+  <tr><td>Str_Acc</td><td>Koliki postotak njegovih udaraca zapravo pogodi metu</td></tr>
+  <tr><td>SApM</td><td>Koliko udaraca u prosjeku <i>primi</i> od protivnika po minuti</td></tr>
+  <tr><td>Str_Def</td><td>Koliko dobro blokira/izbjegava protivničke udarce (postotak)</td></tr>
+  <tr><td>TD_Avg</td><td>Koliko puta u prosjeku obori protivnika na tlo (takedown)</td></tr>
+  <tr><td>TD_Acc</td><td>Koliki postotak pokušaja obaranja mu uspije</td></tr>
+  <tr><td>TD_Def</td><td>Koliko dobro brani od toga da NJEGA obore na tlo</td></tr>
+  <tr><td>Sub_Avg</td><td>Koliko puta u prosjeku pokuša "submission" (tehniku predaje)</td></tr>
+</table>
+
+<h2>Šta je dobro, a šta nedostaje</h2>
+<p>Provjerili smo koliko je od 4455 boraca ima popunjen svaki podatak:</p>
+
+<div class="bar-row"><div class="bar-label">Datum rođenja</div><div class="bar-track"><div class="bar-fill" style="width:89%; background:#15803d;"></div></div><div class="bar-value">89% ima</div></div>
+<div class="bar-row"><div class="bar-label">Visina</div><div class="bar-track"><div class="bar-fill" style="width:93%; background:#15803d;"></div></div><div class="bar-value">93% ima</div></div>
+<div class="bar-row"><div class="bar-label">Stav (Stance)</div><div class="bar-track"><div class="bar-fill" style="width:81%; background:#b45309;"></div></div><div class="bar-value">81% ima</div></div>
+<div class="bar-row"><div class="bar-label">Raspon ruku (Reach)</div><div class="bar-track"><div class="bar-fill" style="width:56%; background:#b91c1c;"></div></div><div class="bar-value">56% ima</div></div>
+
+<p style="margin-top:14px;">Drugim riječima: skoro <b>polovini boraca (44%) nedostaje podatak o rasponu ruku</b>, a <b>svakom petom borcu (19%) nedostaje podatak o stavu</b>. Kad podatak nedostaje, u tabeli je jednostavno prazno polje.</p>
+
+<div class="callout">
+<b>✔ Kako smo ovo riješili (bez brisanja boraca)</b>
+Umjesto da izbacimo skoro polovinu boraca (što bi bilo preveliki gubitak), procijenili smo nedostajuće vrijednosti na pametan način:
+<ul style="margin:6px 0 0 0;">
+<li><b>Raspon ruku</b> — viši ljudi skoro uvijek imaju i veći raspon ruku (ova dva podatka su usko povezana). Kad raspon ruku nedostaje, procijenimo ga na osnovu borčeve visine.</li>
+<li><b>Visina</b> — kad nedostaje, uzmemo prosječnu visinu boraca iz iste težinske kategorije (npr. teškaši su u prosjeku viši od boraca slamnate kategorije).</li>
+<li><b>Stav</b> — ovdje ne "izmišljamo" podatak, nego jednostavno označimo borca kao "stav nepoznat", i to tretiramo kao posebnu, validnu kategoriju.</li>
+</ul>
+Svaki put kad procijenimo vrijednost, obilježimo je posebnom "zastavicom" da računar zna da je to procjena, a ne stvarno izmjeren podatak.
+</div>
+
+<div class="example">
+Primjer: ako borcu nedostaje raspon ruku, a visok je 180 cm, sistem će mu dodijeliti procijenjeni raspon ruku sličan drugim borcima te visine — umjesto da ga potpuno izbacimo iz analize.
+</div>
+</div>
+
+<div class="section">
+<h1>2. Fajl broj 2 — "Izvještaji" o mečevima</h1>
+<p>Ovaj fajl (<code>ufc_gold_dataset_final.csv</code>) sadrži <span class="col-count">8551</span> odigranih UFC mečeva, od 1994. do danas — jedan red po meču, sa detaljima o tome šta se desilo.</p>
+
+<h2>Koje kolone imamo i šta znače</h2>
+<table>
+  <tr><th>Kolona u fajlu</th><th>Šta to znači (jednostavno)</th></tr>
+  <tr><td>Fighter_1, Fighter_2</td><td>Imena dva borca koja su se sukobila</td></tr>
+  <tr><td>Winner</td><td>Ko je pobijedio</td></tr>
+  <tr><td>Weight_Class</td><td>Težinska kategorija tog meča</td></tr>
+  <tr><td>Method</td><td>Kako se meč završio — nokaut (KO/TKO), predaja (Submission) ili odluka sudija (Decision)</td></tr>
+  <tr><td>End_Round, End_Time</td><td>U kojoj rundi i minuti se meč završio</td></tr>
+  <tr><td>F1_Sig_Landed, F2_Sig_Landed</td><td>Koliko je svaki borac zadao pogođenih udaraca <b>u tom konkretnom meču</b></td></tr>
+  <tr><td>F1_TD_Landed, F2_TD_Landed</td><td>Koliko je svaki borac izveo uspješnih obaranja <b>u tom meču</b></td></tr>
+  <tr><td>F1_Ctrl_Sec, F2_Ctrl_Sec</td><td>Koliko sekundi je svaki borac kontrolisao protivnika na tlu <b>u tom meču</b></td></tr>
+  <tr><td>... (još desetak sličnih kolona)</td><td>Sve su to detaljne brojke o tome šta se desilo <b>tokom tog konkretnog meča</b></td></tr>
+</table>
+
+<div class="callout warn">
+<b>⚠ Najvažnija stvar u cijelom dokumentu</b>
+Kolone koje opisuju šta se desilo <b>tokom meča</b> (koliko je udaraca zadato, koliko obaranja itd. u TOM meču) <b>ne smijemo koristiti</b> da predviđamo ishod tog istog meča. To bi bila varanje.
+<div class="example" style="margin-top:8px;">
+Zamisli da pokušavaš predvidjeti hoće li sutra padati kiša, ali kao podatak koristiš "koliko je kiše stvarno palo sutra". To nema smisla — sutra se još nije desilo u trenutku kad praviš predikciju. Isto je i ovdje: kad predviđamo budući meč, ne znamo unaprijed koliko će udaraca ko zadati <i>u tom meču</i> — to je upravo ono što pokušavamo pogoditi.
+</div>
+</div>
+
+<div class="callout">
+<b>✔ Kako ipak koristimo te brojeve (na pravi način)</b>
+Iste te brojke <b>iz ranijih, već odigranih mečeva</b> tog borca su potpuno korisne i dozvoljene. Ako borac ima 10 mečeva iza sebe, možemo pogledati "u prosjeku, koliko je udaraca zadavao u svojih prethodnih 10 mečeva" — to opisuje njegovu formu i stil, i to stvarno znamo unaprijed, prije 11. meča. To je ono što zapravo koristimo za predikciju (detaljnije u dijelu 2 ovog serijala dokumenata).
+</div>
+
+<h2>Šta smo morali izbaciti i zašto</h2>
+<p>Od 8551 mečeva, <b>174 meča (2%) smo izbacili</b> jer nisu imali jasan, "čist" ishod:</p>
+<table>
+  <tr><th>Razlog izbacivanja</th><th>Broj mečeva</th><th>Zašto to nije koristan podatak</th></tr>
+  <tr><td>Neriješeno / meč poništen (Draw / No Contest)</td><td>151</td><td>Nema pobjednika — ne možemo naučiti "ko je bolji" iz meča koji nema pobjednika</td></tr>
+  <tr><td>Odluka poništena naknadno (Overturned)</td><td>58</td><td>Rezultat je promijenjen administrativnom odlukom, ne u samoj borbi</td></tr>
+  <tr><td>Meč nije mogao biti nastavljen (povreda, itd.)</td><td>32</td><td>Ishod ne odražava ko je bio bolji borac te večeri</td></tr>
+  <tr><td>Diskvalifikacija (DQ)</td><td>23</td><td>Pobjeda zbog prekršaja pravila, ne zbog nadmoći u borbi</td></tr>
+  <tr><td>Ostalo</td><td>2</td><td>Rijetki, nejasni slučajevi</td></tr>
+</table>
+<p><i>(Napomena: brojevi se malo preklapaju — npr. jedan meč može istovremeno biti i "poništen" — pa ukupan zbir kategorija nije tačno 174, ali ukupno izbačenih je 174.)</i></p>
+
+<h2>Sredili smo i "kategorije" (težinske klase)</h2>
+<p>U sirovim podacima postojalo je <b>123 različita naziva</b> za težinsku kategoriju — ali mnogi znače potpuno istu stvar. Na primjer, "Lightweight Bout" i "UFC Lightweight Title Bout" su OBA jednostavno "Lakoteška kategorija" — razlika je samo u tome da je drugi bio meč za titulu.</p>
+<p>Sveli smo sve to na <b>15 standardnih kategorija</b> (npr. Bantamweight, Lightweight, Heavyweight, Women's Strawweight...), plus posebnu oznaku "ovo je bio meč za titulu" kad je to slučaj. Tako je podatak čist i jasan za dalju upotrebu.</p>
+</div>
+
+<div class="section">
+<h1>3. Sažetak — šta smo naučili o podacima</h1>
+<table>
+  <tr><th>Pitanje</th><th>Odgovor</th></tr>
+  <tr><td>Koliko boraca imamo?</td><td>4455</td></tr>
+  <tr><td>Koliko mečeva imamo (nakon čišćenja)?</td><td>8377 od originalnih 8551</td></tr>
+  <tr><td>Koji podatak najviše nedostaje?</td><td>Raspon ruku (Reach) — nedostaje kod 44% boraca, ali smo ga uspješno procijenili</td></tr>
+  <tr><td>Šta se ne smije koristiti direktno?</td><td>Brojevi "šta se desilo u meču" ne smiju se koristiti za predikciju TOG ISTOG meča — samo iz RANIJIH mečeva</td></tr>
+  <tr><td>Šta smo izbacili?</td><td>174 meča bez jasnog pobjednika (neriješeno, poništeno, diskvalifikacija)</td></tr>
+  <tr><td>Da li su podaci sada spremni za pravljenje predikcija?</td><td><span class="badge good">DA</span> — nakon čišćenja i procjene nedostajućih vrijednosti</td></tr>
+</table>
+
+<div class="callout">
+<b>Šta slijedi u sljedećem dokumentu</b>
+U drugom dokumentu ćemo objasniti — i dalje jednostavnim jezikom — <i>kako</i> tačno računar koristi ove podatke da "nauči" praviti predikcije, i zašto smo neke stvari morali posebno pažljivo pripremiti.
+</div>
+</div>
+
+<div class="footer-note">UFC Fight Predictor — interni dokument, dio 1/4 (Podaci)</div>
+
+</body>
+</html>

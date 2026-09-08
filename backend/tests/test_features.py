@@ -14,7 +14,7 @@ def _history_row(fighter_name, fight_url, date, won, sig_landed):
         "event_date": pd.Timestamp(date),
         "won": won,
         "sig_landed": sig_landed,
-        "sig_att": sig_landed * 2,
+        "sig_att": sig_landed * 2 if sig_landed is not None else None,
         "td_landed": 0,
         "td_att": 0,
         "sub_att": 0,
@@ -79,6 +79,46 @@ def test_stats_are_independent_per_fighter():
     # B's debut stats must not be contaminated by A's fight history
     assert stats.loc["f2", "prior_fight_count"] == 0
     assert stats.loc["f2", "is_debut"]
+
+
+def test_missing_stat_excluded_from_average_not_treated_as_zero():
+    """A fight with an unknown sig_landed (e.g. added manually/scraped without
+    full stats) must not drag the average down by being counted as a 0 - it
+    should simply be excluded from both the sum and the denominator."""
+    history = pd.DataFrame([
+        _history_row("A", "f1", "2020-01-01", won=True, sig_landed=10),
+        _history_row("A", "f2", "2020-02-01", won=True, sig_landed=None),  # unknown stat
+        _history_row("A", "f3", "2020-03-01", won=True, sig_landed=30),
+        _history_row("A", "f4", "2020-04-01", won=True, sig_landed=999),  # irrelevant, just needs to exist
+    ])
+    stats = compute_point_in_time_stats(history).set_index("fight_url")
+
+    # f2's own prior_avg only saw f1 (10) - unaffected by its own missing value.
+    assert stats.loc["f2", "prior_avg_sig_landed"] == 10
+
+    # f4's priors are f1 (10, known), f2 (unknown), f3 (30, known).
+    # prior_fight_count is 3, but only 2 of those have a known sig_landed -
+    # the average must be (10 + 30) / 2 = 20, NOT (10 + 0 + 30) / 3 = 13.33
+    # (which is what dividing by the old blanket prior_fight_count would give).
+    assert stats.loc["f4", "prior_fight_count"] == 3
+    assert stats.loc["f4", "prior_avg_sig_landed"] == 20
+
+
+def test_missing_stat_does_not_corrupt_later_known_average():
+    """Regression guard: if the fighter's own row has a missing stat, later
+    rows' cumulative sums must still correctly skip it (not turn NaN)."""
+    history = pd.DataFrame([
+        _history_row("A", "f1", "2020-01-01", won=True, sig_landed=None),  # unknown
+        _history_row("A", "f2", "2020-02-01", won=True, sig_landed=None),  # unknown
+        _history_row("A", "f3", "2020-03-01", won=True, sig_landed=8),
+        _history_row("A", "f4", "2020-04-01", won=True, sig_landed=12),
+    ])
+    stats = compute_point_in_time_stats(history).set_index("fight_url")
+
+    assert stats.loc["f1", "prior_avg_sig_landed"] == 0  # no prior fights at all
+    assert stats.loc["f2", "prior_avg_sig_landed"] == 0  # only prior fight (f1) has no known value
+    assert stats.loc["f3", "prior_avg_sig_landed"] == 0  # f1, f2 both unknown
+    assert stats.loc["f4", "prior_avg_sig_landed"] == 8  # only f3 (8) is known so far
 
 
 def _fighters_df():

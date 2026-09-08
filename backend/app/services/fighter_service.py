@@ -114,3 +114,10 @@ def get_fighter_service() -> FighterService:
     if _instance is None:
         _instance = FighterService()
     return _instance
+
+
+def reset_instance() -> None:
+    """Drops the cached singleton so the next call to get_fighter_service()
+    rebuilds it from whatever is currently on disk - used after a retrain."""
+    global _instance
+    _instance = None

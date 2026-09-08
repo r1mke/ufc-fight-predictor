@@ -18,6 +18,8 @@ from app.config import (
     PROCESSED_DIR,
     RAW_FIGHTERS_CSV,
     RAW_FIGHTS_CSV,
+    USER_SUBMITTED_FIGHTERS_CSV,
+    USER_SUBMITTED_FIGHTS_CSV,
 )
 
 HEIGHT_RE = re.compile(r"(\d+)'\s*(\d+)\"")
@@ -200,13 +202,27 @@ def clean_fights(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _load_with_user_submitted(raw_path, user_submitted_path) -> pd.DataFrame:
+    """Loads the original scraped CSV and, if present, appends any
+    admin-approved rows submitted through the app (scraped-by-us-later or
+    manually added) - same column schema, so no special-casing needed
+    downstream in clean_fighters()/clean_fights()."""
+    df = pd.read_csv(raw_path)
+    if user_submitted_path.exists():
+        extra = pd.read_csv(user_submitted_path)
+        if not extra.empty:
+            df = pd.concat([df, extra], ignore_index=True)
+    return df
+
+
 def run():
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    fighters_raw = pd.read_csv(RAW_FIGHTERS_CSV)
-    fights_raw = pd.read_csv(RAW_FIGHTS_CSV)
+    fighters_raw = _load_with_user_submitted(RAW_FIGHTERS_CSV, USER_SUBMITTED_FIGHTERS_CSV)
+    fights_raw = _load_with_user_submitted(RAW_FIGHTS_CSV, USER_SUBMITTED_FIGHTS_CSV)
 
     fighters_clean = clean_fighters(fighters_raw)
+    fighters_clean = fighters_clean.drop_duplicates(subset="fighter_url", keep="first")
     fights_clean = clean_fights(fights_raw)
 
     fighters_clean.to_parquet(FIGHTERS_CLEAN_PARQUET, index=False)

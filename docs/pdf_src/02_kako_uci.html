@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<title>Kako računar uči — UFC Fight Predictor</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 12.5px;
+  }
+  .cover {
+    height: 250mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    color: #b91c1c;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .cover h1 {
+    font-size: 34px;
+    margin: 0 0 10px 0;
+    line-height: 1.15;
+  }
+  .cover p.subtitle {
+    font-size: 15px;
+    color: #444;
+    max-width: 420px;
+  }
+  .cover .meta {
+    margin-top: 60px;
+    font-size: 11px;
+    color: #777;
+  }
+  h1 { color: #111; font-size: 22px; border-bottom: 3px solid #b91c1c; padding-bottom: 8px; margin-top: 0; }
+  h2 { color: #b91c1c; font-size: 16px; margin-top: 28px; }
+  h3 { font-size: 13.5px; margin-top: 18px; margin-bottom: 6px; }
+  .section { page-break-before: always; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px 0; font-size: 11.5px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: white;
+  }
+  .badge.good { background: #15803d; }
+  .badge.bad { background: #b91c1c; }
+  .badge.neutral { background: #b45309; }
+  .callout {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 14px 0;
+    font-size: 12px;
+  }
+  .callout.warn { background: #fffbeb; border-color: #fde68a; }
+  .callout.info { background: #eff6ff; border-color: #bfdbfe; }
+  .callout b { display: block; margin-bottom: 4px; }
+  .example {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 11.5px;
+    font-style: italic;
+  }
+  .analogy {
+    background: #fdf4ff;
+    border-left: 4px solid #a855f7;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .analogy b { color: #7e22ce; }
+  .footer-note { margin-top: 30px; font-size: 10px; color: #999; }
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 16px 0;
+    font-size: 10.5px;
+  }
+  .timeline .fight {
+    background: #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+    flex: 1;
+  }
+  .timeline .fight.target {
+    background: #fee2e2;
+    border: 2px solid #b91c1c;
+    font-weight: 700;
+  }
+  .timeline .arrow { color: #999; font-size: 16px; }
+  .two-col { display: flex; gap: 16px; }
+  .two-col > div { flex: 1; }
+  .card-mini {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 11px;
+  }
+  .card-mini h4 { margin: 0 0 6px 0; font-size: 12px; }
+  .callout, .callout.warn, .callout.info, .example, .analogy, .card-mini, table, .timeline {
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">UFC Fight Predictor · Dio 2 od 4</div>
+  <h1>Kako računar uči da predviđa</h1>
+  <p class="subtitle">I dalje bez formula: kako od "sirovih" podataka o mečevima pravimo nešto što računar može koristiti da nagađa ishod novog meča.</p>
+  <div class="meta">Septembar 2026 · Nastavak na Dio 1 (Podaci)</div>
+</div>
+
+<h1>0. Osnovna ideja — kako računar "uči"</h1>
+<p>Kad kažemo da računar "uči" da predviđa mečeve, mislimo na nešto sasvim konkretno: pokažemo mu <b>hiljade starih mečeva čiji ishod već znamo</b>, i on sam pronađe pravilnosti — na primjer, "kad je borac A bio mlađi i u boljem nizu pobjeda od borca B, borac A je češće pobjeđivao". Kad mu kasnije damo dva potpuno nova borca, on primijeni ta ista pravila da nagađa.</p>
+
+<div class="analogy">
+<b>Analogija: iskusan trener</b><br>
+Zamisli trenera koji je gledao hiljade UFC mečeva. Kad vidi dva nova borca, on intuitivno "osjeti" ko ima veće šanse — ne zato što je vidio TAJ konkretan meč, nego zato što je iz iskustva primijetio obrasce (mlađi/iskusniji/u formi borac obično ima prednost). Računar radi istu stvar, samo sistematski i brojevima, umjesto "osjećaja".
+</div>
+
+<p>Da bi to uopšte bilo moguće, prvo moramo <b>pretvoriti podatke o borcima u oblik pogodan za poređenje</b>. To je tema ovog dokumenta.</p>
+
+<div class="section">
+<h1>1. Historijski "dosje" borca — šta je borac pokazao DO SADA</h1>
+<p>U Dijelu 1 smo objasnili da <b>ne smijemo</b> koristiti brojke o tome šta se desilo <i>tokom</i> meča da predvidimo ishod tog istog meča. Rješenje: za svaki meč u istoriji, vraćamo se unazad i pitamo — <b>šta je ovaj borac pokazao u SVIM SVOJIM RANIJIM mečevima, prije ovog?</b></p>
+
+<p>Za svakog borca, prije svakog njegovog meča, računamo:</p>
+<table>
+  <tr><th>Šta računamo</th><th>Zašto je korisno</th></tr>
+  <tr><td>Koliko je mečeva imao do sada</td><td>Iskustvo — debitant vs. veteran</td></tr>
+  <tr><td>Koliko pobjeda / poraza</td><td>Opšti uspjeh u karijeri do tog trenutka</td></tr>
+  <tr><td>Da li je trenutno u nizu pobjeda</td><td>"Forma" / momentum — je li na usponu ili padu</td></tr>
+  <tr><td>Koliko dana je prošlo od zadnjeg meča</td><td>Odmoran i svjež, ili dugo nije borio se</td></tr>
+  <tr><td>Prosjek pogođenih udaraca po meču (do sada)</td><td>Koliko je agresivan/efikasan udarač generalno</td></tr>
+  <tr><td>Prosjek uspješnih obaranja po meču (do sada)</td><td>Koliko se oslanja na obaranje protivnika na tlo</td></tr>
+  <tr><td>Prosjek vremena kontrole protivnika (do sada)</td><td>Koliko dominira kad obori protivnika</td></tr>
+  <tr><td>Prosjek pokušaja predaje (do sada)</td><td>Koliko je sklon traženju submissiona</td></tr>
+</table>
+
+<h2>Primjer kako to izgleda kroz vrijeme</h2>
+<p>Zamisli borca koji je odigrao 5 mečeva. Kad računamo njegov "dosje" za 6. meč, koristimo <b>samo</b> podatke iz prvih 5 — 6. meč se uopšte ne broji, jer je to upravo ono što (u stvarnoj primjeni aplikacije) tek treba da se desi.</p>
+
+<div class="timeline">
+  <div class="fight">Meč 1</div><div class="arrow">→</div>
+  <div class="fight">Meč 2</div><div class="arrow">→</div>
+  <div class="fight">Meč 3</div><div class="arrow">→</div>
+  <div class="fight">Meč 4</div><div class="arrow">→</div>
+  <div class="fight">Meč 5</div><div class="arrow">→</div>
+  <div class="fight target">Meč 6<br><span style="font-weight:400;">(predviđamo)</span></div>
+</div>
+<p style="text-align:center; font-size:11px; color:#666; margin-top:-6px;">Dosje za Meč 6 = prosjek/zbir iz mečeva 1–5. Meč 6 sam po sebi se ne gleda.</p>
+
+<div class="callout">
+<b>✔ Zašto je ovo isto što i "izvještaj o formi" prije prave borbe</b>
+Ovo je potpuno isto što novinari i komentatori rade prije svakog pravog UFC meča kad kažu "ide u ovaj meč sa nizom od 5 pobjeda" ili "u zadnjih 10 mečeva prosječno je zadavao ovoliko udaraca" — mi to isto računamo, samo sistematski za svakog borca i svaki meč u historiji, da bismo to mogli iskoristiti kao ulazni podatak.
+</div>
+</div>
+
+<div class="section">
+<h1>2. Zašto gledamo RAZLIKU između dva borca, ne svakog posebno</h1>
+<p>Kad računar poredi dva borca, ne dajemo mu odvojeno "Borac A ima ovoliko" i "Borac B ima ovoliko" — dajemo mu jednu jedinu brojku: <b>razliku</b> između njih dvojice.</p>
+
+<div class="analogy">
+<b>Analogija: košarkaška utakmica</b><br>
+Kad procjenjuješ ko će pobijediti u košarci, ne gledaš "Tim A je prosječno visok 195 cm" kao izolovan podatak — gledaš <b>da li je Tim A viši ili niži OD Tima B, i za koliko</b>. Apsolutna visina sama po sebi ne govori ništa dok je ne uporediš sa protivnikom.
+</div>
+
+<p>Isto radimo sa svim brojkama: umjesto "Borac A star 25, Borac B star 32", računar dobija samo "razlika u godinama: −7" (Borac A je mlađi za 7 godina). Ovo pravi obrazac dosljednijim i lakšim za prepoznavanje — nije bitno da li se meč dešava između dva mlada debitanta ili dva iskusna veterana, bitna je <b>relativna</b> prednost.</p>
+</div>
+
+<div class="section">
+<h1>3. Fer igra — rješavanje problema "ko je upisan prvi"</h1>
+<p>U originalnim podacima, svaki meč je zapisan kao "Borac 1 protiv Borca 2" — ali taj redoslijed je potpuno slučajan (samo redoslijed unosa u bazu), i <b>ne znači apsolutno ništa</b> o tome ko je bolji.</p>
+
+<div class="callout warn">
+<b>⚠ Rizik koji smo morali izbjeći</b>
+Da smo računaru pokazali podatke onakve kakvi jesu, postojala je opasnost da on slučajno "primijeti" da "Borac 1" u podacima nešto češće pobjeđuje — ne zato što je to stvarno pravilo UFC-a, nego čista slučajnost u tome kako su mečevi upisivani u tabelu. To bi ga navelo na pogrešan trag.
+</div>
+
+<p>Rješenje: svaki meč pokazujemo računaru <b>dvaput</b> — jednom u originalnom redoslijedu, jednom sa potpuno zamijenjenim stranama (i odgovarajuće izmijenjenim razlikama i pobjednikom). Tako je natjeramo da uči isključivo iz <b>stvarnih razlika u statistikama</b>, a ne iz pozicije u tabeli.</p>
+
+<div class="example">
+Primjer: meč "Jones protiv Pereire" gdje Jones pobjeđuje, prikazuje se računaru i kao "Jones protiv Pereire → Jones pobjeđuje" i kao "Pereira protiv Jonesa → Pereira gubi" (sa obrnutim brojkama razlika). Način na koji se meč završava (nokaut/predaja/odluka) ostaje isti u obje verzije — to ne zavisi od toga ko je "prvi" u tabeli.
+</div>
+
+<p>Rezultat: od 8377 očišćenih mečeva (iz Dijela 1), dobijamo <b>16 754 "primjera za učenje"</b> — tačno duplo, i savršeno izbalansirano (jednak broj pobjeda "lijeve" i "desne" strane).</p>
+</div>
+
+<div class="section">
+<h1>4. Isto pravilo važi kad TI praviš predikciju u aplikaciji</h1>
+<p>Kad u aplikaciji odabereš dva borca da vidiš predikciju, sistem radi <b>potpuno isti postupak</b> kao gore — samo što sada "dosje" svakog borca uključuje <i>baš sve</i> njegove odigrane mečeve do danas (jer je vaš hipotetički meč, po definiciji, tek u budućnosti u odnosu na sve što se do sada desilo).</p>
+
+<div class="callout info">
+<b>Zašto je bitno da je postupak identičan</b>
+Da smo za trening računali "dosje" na jedan način, a za stvarnu predikciju u aplikaciji na drugi, model bi mogao praviti greške zbog te nedosljednosti — kao kad bi učenik učio iz jednog udžbenika, a na ispitu dobio pitanja iz potpuno drugačijeg gradiva. Mi koristimo <b>identičan postupak</b> na oba mjesta, tako da nema te vrste iznenađenja.
+</div>
+</div>
+
+<div class="section">
+<h1>5. Čest upit: šta ako su se ova dva borca već borila ranije?</h1>
+<p>Logično pitanje: ako dva borca imaju odigran meč u prošlosti, i mi ih ponovo unesemo u aplikaciju da napravimo (hipotetičku) predikciju — da li sistem mora nekako "izbaciti" taj stari, već odigrani meč iz podataka?</p>
+
+<div class="callout">
+<b>✔ Odgovor: ne mora, jer model ga nikad ni ne gleda "kao par"</b>
+Model nikad ne pamti <i>protiv koga</i> je borac ostvario svoje pobjede/poraze ili prosjeke — gleda samo njegove <b>opšte, lične</b> brojke (iz Dijela 1 poglavlja 1). Kad uneseš dva borca koja su se već borila:
+<ul style="margin:6px 0 0 0;">
+<li>Sistem uzme <b>kompletan dosje Borca A</b> (svi njegovi mečevi do danas — uključujući i taj stari protiv Borca B, tretiran potpuno isto kao i bilo koji drugi njegov protivnik)</li>
+<li>Sistem uzme <b>kompletan dosje Borca B</b> na isti način</li>
+<li>Napravi <b>svježu, novu predikciju</b> na osnovu tih ažurnih brojki (možda su od tog starog meča obojica imali još borbi, ostarili, promijenili formu...)</li>
+</ul>
+</div>
+
+<div class="example">
+Primjer: ako su se Jones i Pereira već borili prije 2 godine, taj meč je jednostavno "utkan" u prosjeke obojice (kao još jedan odigran meč), potpuno isto kao i svaki drugi njihov protivnik. Sistem ne prepoznaje "ovo su ta ista dva borca koja su se već sukobila" — samo vidi ažurirane brojke oba borca posebno.
+</div>
+
+<div class="callout warn">
+<b>⚠ Iskreno ograničenje koje ovo otvara</b>
+Pravi trener bi vjerovatno rekao "pazi, ovaj ga je već jednom pobijedio — zna mu stil, to nešto znači za revanš". Naš model to <b>trenutno ne prepoznaje</b> — nema poseban podatak tipa "međusobni skor" (ko je koga već pobijedio). To je poznato ograničenje i mogući pravac za buduće poboljšanje sistema, ne greška u onome što trenutno postoji.
+</div>
+</div>
+
+<div class="section">
+<h1>6. Šta na kraju dobijemo — "kartica poređenja" za svaki meč</h1>
+<p>Nakon svega opisanog, svaki meč (stvaran ili hipotetički) pretvara se u jednu "karticu" sa oko <b>28 različitih poređenja</b> između dva borca, grupisanih u tri cjeline:</p>
+
+<div class="two-col">
+<div class="card-mini">
+<h4>🧍 Fizičke razlike</h4>
+Visina, raspon ruku, težina, starost
+</div>
+<div class="card-mini">
+<h4>📋 Razlike u iskustvu</h4>
+Broj mečeva, pobjede, porazi, trenutni niz pobjeda, dani odmora
+</div>
+<div class="card-mini">
+<h4>🥊 Razlike u stilu borbe</h4>
+Prosjek udaraca, obaranja, kontrole, pokušaja predaje, nokdauna
+</div>
+</div>
+
+<p style="margin-top:14px;">Plus par dodatnih podataka koji nisu "razlike" nego opisuju sam meč: težinska kategorija, da li je meč za titulu, i borilački stavovi oba borca (npr. Orthodox vs. Southpaw — ova kombinacija ponekad utiče na tok borbe).</p>
+
+<h2>Konkretan primjer — kako izgleda prava kartica</h2>
+<p>Da ovo ne ostane apstraktno, evo <b>stvarnih brojki</b> koje bi sistem izračunao da danas u aplikaciji odabereš <b>Jon Jonesa</b> i <b>Alexa Pereiru</b>:</p>
+
+<table>
+  <tr><th>Pokazatelj</th><th>Jon Jones</th><th>Alex Pereira</th><th>Razlika (ovo ide modelu)</th></tr>
+  <tr><td>Visina</td><td>76" (≈193 cm)</td><td>76" (≈193 cm)</td><td>0 — potpuno isti</td></tr>
+  <tr><td>Raspon ruku</td><td>84"</td><td>79"</td><td>+5 u korist Jonesa</td></tr>
+  <tr><td>Težina</td><td>248 lbs</td><td>205 lbs</td><td>+43 u korist Jonesa</td></tr>
+  <tr><td>Starost</td><td>39.1 god.</td><td>39.2 god.</td><td>≈0 — praktično isti</td></tr>
+  <tr><td>Broj UFC mečeva do sada</td><td>22</td><td>12</td><td>+10 u korist Jonesa (iskusniji)</td></tr>
+  <tr><td>Pobjede do sada</td><td>22</td><td>10</td><td>+12 u korist Jonesa</td></tr>
+  <tr><td>Porazi do sada</td><td>0</td><td>2</td><td>−2 (Jones ima manje poraza)</td></tr>
+  <tr><td>Trenutni niz pobjeda</td><td>22</td><td>1</td><td>+21 u korist Jonesa</td></tr>
+  <tr><td>Dana od zadnjeg meča</td><td>661</td><td>339</td><td>+322 (Jones duže nije borio se)</td></tr>
+  <tr><td>Prosjek pogođenih udaraca po meču</td><td>64.8</td><td>57.1</td><td>+7.7 u korist Jonesa</td></tr>
+  <tr><td>Prosjek uspješnih obaranja po meču</td><td>2.0</td><td>0.1</td><td>+1.9 u korist Jonesa</td></tr>
+  <tr><td>Prosjek vremena kontrole (sekunde)</td><td>226</td><td>13</td><td>+213 u korist Jonesa</td></tr>
+  <tr><td>Prosjek pokušaja predaje</td><td>0.5</td><td>0.2</td><td>+0.3 u korist Jonesa</td></tr>
+  <tr><td>Prosjek nokdauna po meču</td><td>0.23</td><td>0.58</td><td>−0.36 (Pereira ih zadaje više)</td></tr>
+  <tr><td>Borilački stav</td><td>Orthodox</td><td>Orthodox</td><td>isti stav kod obojice</td></tr>
+</table>
+
+<div class="callout">
+<b>Šta model stvarno "vidi"</b>
+Model ne dobija imena "Jon Jones" ili "Alex Pereira", ne dobija ni njihove pojedinačne brojke iz prve dvije kolone — dobija <b>samo zadnju kolonu</b>: niz razlika. Primijeti da razlika u visini iznosi 0 (obojica su iste visine), pa taj podatak ovom konkretnom meču ništa ne "govori" — dok su razlike u nizu pobjeda (+21) i vremenu kontrole (+213 sekundi) mnogo upečatljivije, i upravo su to, kako ćemo vidjeti u Dijelu 4, među najuticajnijim pokazateljima za predikciju pobjednika.
+</div>
+
+<p>Ova "kartica" od ~28 poređenja je ono što stvarno ulazi u sljedeći korak — same modele koji prave predikciju. To je tema <b>Dijela 3</b>.</p>
+</div>
+
+<div class="section">
+<h1>7. Sažetak</h1>
+<table>
+  <tr><th>Pitanje</th><th>Odgovor</th></tr>
+  <tr><td>Kako računar "uči"?</td><td>Prepoznaje obrasce iz hiljada starih mečeva sa poznatim ishodom</td></tr>
+  <tr><td>Šta se računa za svakog borca?</td><td>"Dosje" iz SVIH njegovih ranijih mečeva — iskustvo, forma, prosjeci udaraca/obaranja/kontrole</td></tr>
+  <tr><td>Zašto razlika, a ne pojedinačne brojke?</td><td>Bitna je relativna prednost jednog borca nad drugim, ne apsolutna vrijednost</td></tr>
+  <tr><td>Zašto svaki meč ulazi dvaput?</td><td>Da model ne bi slučajno naučio pogrešnu pouku iz toga ko je "prvi" u tabeli</td></tr>
+  <tr><td>Koliko "primjera za učenje" imamo na kraju?</td><td>16 754 (dvostruko od 8377 očišćenih mečeva)</td></tr>
+  <tr><td>Koristi li se isti postupak i za pravu predikciju u aplikaciji?</td><td><span class="badge good">DA</span> — identičan, samo se koristi kompletna istorija do danas</td></tr>
+  <tr><td>Šta ako su se dva borca već borila ranije?</td><td>Taj meč se ne izbacuje niti posebno tretira — jednostavno je "utkan" u opšte prosjeke oba borca, kao i svaki drugi njihov protivnik</td></tr>
+</table>
+
+<div class="callout">
+<b>Šta slijedi u sljedećem dokumentu</b>
+U Dijelu 3 objašnjavamo — i dalje bez formula — <i>koje tri metode</i> smo koristili da od ovih "kartica poređenja" napravimo stvarnu predikciju, kako svaka od njih razmišlja, i zašto smo odabrali baš njih tri.
+</div>
+</div>
+
+<div class="footer-note">UFC Fight Predictor — interni dokument, dio 2/4 (Kako računar uči)</div>
+
+</body>
+</html>
