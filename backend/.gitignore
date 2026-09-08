@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/processed/
+models/*.joblib
+models/*.json
+!models/.gitkeep
+.env
+.pytest_cache/
