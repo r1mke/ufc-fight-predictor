@@ -102,7 +102,11 @@ Sirovi CSV sadrži tekstualne formate koje treba pretvoriti u brojeve:
 
 ### 4.1 Point-in-time rekonstrukcija forme borca
 
-Za svaki meč i svakog borca, računaju se agregati **isključivo** iz mečeva koji su se desili **strogo prije** tog datuma:
+**Korak 0 — svaki meč se prvo razdvaja u dva reda** (`build_history_long()`): `fights_clean` dolazi kao jedan red po meču, sa odvojenim `F1_*`/`F2_*` kolonama za svakog borca. Da bi se career-agregati (broj pobjeda, win streak, prosjeci) uopšte mogli računati jednostavnim `groupby("fighter_name")` kroz vrijeme, ta jedna borba se pretvara u **dva reda** — jedan iz perspektive borca 1 (njegove sopstvene statistike te borbe + ime protivnika + da li je pobijedio), drugi iz perspektive borca 2 (obrnuto). Rezultat: `fights_clean` sa 8377 mečeva postaje međukorak od **16754 redova** (jedan po borcu po meču), koji se zatim grupiše po imenu borca i sortira hronološki da bi cumsum-tehnika ispod uopšte imala smisla.
+
+Ovo je **potpuno odvojena** stvar od augmentacije opisane u 4.3 (koja duplicira već gotov **par** boraca — cijeli meč kao jedan red — radi pozicijske simetrije A/B). I jedno i drugo "razdvoji borbu na dva reda", ali u različitim koracima pipeline-a i iz različitog razloga: ovdje (4.1) da bi se historija računala po borcu nezavisno od toga da li je bio "Fighter_1" ili "Fighter_2"; tamo (4.3) da bi finalni model bio simetričan na to koji je borac naveden prvi u paru koji predviđa.
+
+Nakon ovog koraka, za svaki meč i svakog borca, računaju se agregati **isključivo** iz mečeva koji su se desili **strogo prije** tog datuma:
 - Broj ranijih mečeva, pobjeda, poraza
 - Trenutni niz pobjeda (win streak) **ulazeći** u meč
 - Broj dana od zadnjeg meča
@@ -125,6 +129,8 @@ Tehnika implementacije: kumulativna suma (cumsum) kroz i uključujući trenutni 
 Svaka imputirana vrijednost prati je poseban `*_missing` bool feature, tako da model "zna" da je vrijednost procijenjena, a ne stvarno izmjerena.
 
 ### 4.3 Simetrična reprezentacija i augmentacija
+
+*(Ne miješati sa "dugim" formatom iz 4.1 — ovo je drugi, kasniji korak, nad već spojenim parom boraca po meču.)*
 
 Svaki meč postaje jedan red s **razlikama** (Borac A − Borac B) za svaki numerički feature (npr. `age_years_diff`, `reach_in_diff`, `prior_avg_sig_landed_diff`). Da bi model bio neosjetljiv na to koji je borac "prvi" a koji "drugi" (nema stvarnog značenja u UFC-u — to je samo redoslijed u CSV-u), svaki meč se duplicira sa zamijenjenim stranama (A↔B) i invertovanim brojčanim razlikama; oznaka pobjednika se tada obrne, a oznaka metode ostaje ista (metoda ne zavisi od redoslijeda). Ovo udvostručuje trening skup i eliminiše pozicijsku pristrasnost.
 
@@ -327,3 +333,58 @@ Test podaci korišteni za verifikaciju (fiktivan meč Jon Jones vs Alex Pereira,
 3. Retreniranje je blokirajuće (in-memory status + lock, jedno odjednom) — dovoljno za jednog administratora, ne skalira na više istovremenih korisnika.
 4. Scraping se pokreće ručno dugmetom, ne po rasporedu (cron) — svjesna odluka da administrator kontroliše kad se šalju zahtjevi ka eksternom sajtu, izbjegava nepotrebno opterećenje `ufcstats.com`.
 5. Dijeljeni token umjesto punog auth sistema — prihvatljivo za aplikaciju s jednim vlasnikom, ne bi skaliralo na više administratora s različitim nivoima pristupa.
+
+## 12. Eksperiment: alternativna feature reprezentacija (diff vs. concat)
+
+Istražili smo da li postoji smislena razlika u tačnosti ako se pobjednik/metoda predviđaju iz drugačije **reprezentacije** iste informacije — ne novi podaci, isti brojevi, samo drugačije upakovani u red.
+
+### 12.1 Motivacija
+
+Postojeći pristup (sekcija 4.3) svaki meč pretvara u jedan red s **razlikama** (`age_years_diff = age_a − age_b`, itd.). Pitanje: da li model gubi signal time što mu se razlika daje unaprijed izračunata, umjesto da mu se daju obje vrijednosti (`age_years_a`, `age_years_b`) odvojeno pa neka sam nauči kako da ih poredi? Matematički, za logističku regresiju ovo je striktno uopštenje — `w·(a−b)` je specijalan slučaj od `w_a·a + w_b·b` (kad je `w_a = −w_b`) — pa concat format teorijski ne može biti gori za linearni model **ako ima dovoljno podataka** da nauči taj poseban slučaj bez overfittinga. Za stabla (Random Forest, LightGBM) razlika je manje očigledna, jer stabla već mogu implicitno naučiti poređenje preko sekvence split-ova na sirovim vrijednostima.
+
+### 12.2 Šta je konkretno drugačije
+
+Dvije varijante dijele **identičan** izvor podataka i identičnu point-in-time logiku (sekcija 4.1) — razlikuje se samo posljednji korak, gdje se par (borac A, borac B) pretvara u konačne kolone za model:
+
+| | "diff" (podrazumijevano, produkcija) | "concat" (eksperimentalno) |
+|---|---|---|
+| Numerički feature-i | `{feat}_diff = a − b` (npr. `age_years_diff`) | `{feat}_a` i `{feat}_b` odvojeno (npr. `age_years_a`, `age_years_b`) |
+| Broj sirovih numeričkih kolona | 14 | 28 (14 × 2) |
+| Broj finalnih kolona (nakon one-hot enkodiranja kategorija) | 52 | 68 |
+| Kategorijski i flag feature-i (stance, weight class, missing-indikatori, is_debut) | isti u obje varijante, nepromijenjeni | isti u obje varijante, nepromijenjeni |
+| Broj redova u trening tabeli | 16754 (isto u obje — ista augmentacija iz 4.3) | 16754 |
+
+### 12.3 Implementacija (aditivno, bez uticaja na produkciju)
+
+`build_training_table()`, `build_and_save()` i `train.run()` primaju parametar `variant` (`"diff"` podrazumijevano). Za `"diff"` kod se ponaša **identično kao prije** — provjereno da `build_training_table(variant="diff")` reprodukuje postojeći `training_table.parquet` bit-po-bit. Za `"concat"`, isti kod piše u odvojene fajlove (`data/processed/training_table_concat.parquet`, `models/variants/concat/*`), tako da ništa od postojećeg (uključujući automatski admin retrain tok, sekcija 11) nije dirano. `PredictionService` po potrebi (lijeno) učitava dodatnu varijantu; API (`PredictRequest.variant`, `GET /api/models?variant=`) je potpuno opciono polje — stariji zahtjevi bez njega dobijaju identično ponašanje kao prije uvođenja ove opcije.
+
+### 12.4 Rezultati
+
+**Winner (binarna klasifikacija):**
+
+| Model | diff Accuracy | concat Accuracy | Δ Accuracy | diff Log-Loss | concat Log-Loss |
+|---|---|---|---|---|---|
+| Logistic Regression | 62.71% | 62.71% | +0.00pp | 0.635 | 0.635 |
+| Random Forest | 61.72% | 61.72% | +0.00pp | 0.643 | 0.642 |
+| LightGBM | 60.65% | 61.61% | **+0.96pp** | 0.643 | 0.641 |
+
+**Method (3-klasna: KO_TKO/Submission/Decision):**
+
+| Model | diff Accuracy | concat Accuracy | Δ Accuracy | diff Log-Loss | concat Log-Loss |
+|---|---|---|---|---|---|
+| Logistic Regression | 48.09% | 43.32% | **-4.77pp** | 1.189 | 1.231 |
+| Random Forest | 50.21% | 51.10% | +0.89pp | 1.289 | 1.310 |
+| LightGBM | 44.60% | 44.63% | +0.03pp | 1.263 | 1.286 |
+
+### 12.5 Analiza
+
+- **Za Winner, razlika je zanemarljiva do mala.** Logistic Regression i Random Forest daju **identičnu** accuracy u obje varijante — potvrđuje teorijsko očekivanje da za ovaj dataset diff i concat nose gotovo istu informaciju za ta dva algoritma. LightGBM jedini bilježi mjerljivo poboljšanje (+0.96pp) — moguće da leaf-wise rast uspije iskoristiti po koju asimetričnu interakciju (npr. "razlika je bitnija kod jednog stila nego drugog") koju čist diff sakriva, ali dobitak je mali i unutar tipičnog raspona CV varijanse (± 0.5-1.5pp na ovom broju mečeva).
+- **Za Method, Logistic Regression je jedini koji jasno pogorša** (-4.77pp). Objašnjenje se poklapa s teorijom iz 12.1: udvostručavanje broja parametara (14 → 28 numeričkih kolona) za 3-klasni problem sa relativno malo mečeva (13402 trening redova) otvara prostor za overfitting umjesto boljeg poređenja — model nije imao dovoljno signala da nauči kad treba svesti `w_a·a + w_b·b` nazad na efektivni `w·(a−b)`.
+- **Nijedan model ne postiže jasan, konzistentan dobitak od concat formata preko oba cilja.** Zaključak: diff-encoding već hvata gotovo sav koristan signal koji ova dva feature-format-a mogu nositi za ovaj dataset — reparametrizacija sama po sebi (bez novih feature-a poput omjera umjesto razlike, ili eksplicitnih interakcijskih termina) nije dovoljna da pomjeri tačnost na način koji nije samo šum.
+
+### 12.6 Ograničenja ovog eksperimenta
+
+1. **Nema statističkog testa značajnosti** (npr. paired bootstrap ili McNemar test) na razlikama iz 12.4 — sve razlike su izvještene kao tačke, ali npr. LightGBM-ov +0.96pp na Winner-u nije formalno potvrđen kao statistički značajan naspram CV varijanse (± 0.48-1.43pp po modelu, vidi 6.2).
+2. **Trenirano samo jednom** (fiksni `random_state=42`, isti split) — nije ponovljeno kroz više sjemena da bi se procijenila stabilnost razlika.
+3. **Concat modeli nisu uključeni u automatski admin retrain tok** (namjerna odluka radi izolacije od produkcije) — moraju se ručno regenerisati (`python -m app.ml.features concat && python -m app.ml.train concat`) nakon svakog retreniranja diff varijante ako se želi ažurno poređenje.
+4. Testirana je samo jedna alternativna reprezentacija (concat). Nisu testirane druge (npr. omjer `a/b` umjesto razlike, ili eksplicitni interakcijski feature-i) koje bi po analizi u 12.1/12.5 potencijalno mogle nositi dodatni signal koji ni diff ni concat sami ne hvataju.
