@@ -33,7 +33,9 @@ export function PredictionResult({ result }: { result: PredictResponse }) {
             </p>
             <div className="flex flex-wrap gap-2">
               {result.top_features.slice(0, 6).map((f) => {
-                const label = f.feature.replace(/_diff$/, "").replace(/_/g, " ");
+                // "diff" variant features end in _diff; "concat" variant features
+                // end in _a/_b (fighter_a / fighter_b) instead - strip either.
+                const label = f.feature.replace(/_(diff|a|b)$/, "").replace(/_/g, " ");
                 const description = describeFeature(f.feature);
                 const pill = (
                   <span className="cursor-help rounded-full border px-2.5 py-1 text-xs text-muted-foreground">

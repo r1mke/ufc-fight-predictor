@@ -31,5 +31,29 @@ MODEL_NAMES = ["logistic_regression", "random_forest", "lightgbm"]
 TARGETS = ["winner", "method"]
 METHOD_CLASSES = ["KO_TKO", "Submission", "Decision"]
 
+# Feature-engineering variants, kept fully separate on disk so the default
+# ("diff") production models/pipeline are never touched by an experiment.
+# "diff": current production approach, (fighter_a - fighter_b) numeric features.
+# "concat": experimental - fighter_a and fighter_b numeric features kept
+#   separate instead of pre-subtracted, so the model learns its own comparison.
+MODEL_VARIANTS = ["diff", "concat"]
+DEFAULT_MODEL_VARIANT = "diff"
+
+
+def models_dir_for(variant: str) -> Path:
+    if variant not in MODEL_VARIANTS:
+        raise ValueError(f"unknown variant: {variant}")
+    if variant == DEFAULT_MODEL_VARIANT:
+        return MODELS_DIR
+    return MODELS_DIR / "variants" / variant
+
+
+def training_table_path(variant: str) -> Path:
+    if variant not in MODEL_VARIANTS:
+        raise ValueError(f"unknown variant: {variant}")
+    if variant == DEFAULT_MODEL_VARIANT:
+        return TRAINING_TABLE_PARQUET
+    return PROCESSED_DIR / f"training_table_{variant}.parquet"
+
 SCRAPE_BASE_URL = "http://ufcstats.com"
 SCRAPE_EVENTS_URL = f"{SCRAPE_BASE_URL}/statistics/events/completed"

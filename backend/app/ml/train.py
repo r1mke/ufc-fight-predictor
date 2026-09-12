@@ -18,7 +18,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from app.config import METHOD_CLASSES, METRICS_JSON, MODEL_NAMES, MODELS_DIR, TARGETS, TRAINING_TABLE_PARQUET
+from app.config import (
+    DEFAULT_MODEL_VARIANT, METHOD_CLASSES, MODEL_NAMES, TARGETS, models_dir_for, training_table_path,
+)
 from app.ml.evaluate import (
     anova_feature_importance,
     cross_validate_grouped,
@@ -26,7 +28,7 @@ from app.ml.evaluate import (
     group_train_test_split,
     pearson_correlation_pairs,
 )
-from app.ml.features import ALL_FEATURE_COLUMNS, DIFF_NUMERIC_FEATURES, encode_features
+from app.ml.features import DIFF_NUMERIC_FEATURES, FEATURE_COLUMNS_BY_VARIANT, encode_features
 
 import joblib
 
@@ -55,23 +57,27 @@ def build_model(model_name: str, random_state=RANDOM_STATE):
     raise ValueError(f"unknown model_name: {model_name}")
 
 
-def prepare_features(table: pd.DataFrame):
-    X_raw = table[ALL_FEATURE_COLUMNS].copy()
+def prepare_features(table: pd.DataFrame, variant: str = DEFAULT_MODEL_VARIANT):
+    X_raw = table[FEATURE_COLUMNS_BY_VARIANT[variant]].copy()
     bool_cols = X_raw.select_dtypes(include="bool").columns
     X_raw[bool_cols] = X_raw[bool_cols].astype(int)
     X = encode_features(X_raw)
     return X, X.columns.tolist()
 
 
-def run():
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    table = pd.read_parquet(TRAINING_TABLE_PARQUET)
+def run(variant: str = DEFAULT_MODEL_VARIANT):
+    models_dir = models_dir_for(variant)
+    models_dir.mkdir(parents=True, exist_ok=True)
+    table = pd.read_parquet(training_table_path(variant))
 
-    X, feature_columns = prepare_features(table)
+    X, feature_columns = prepare_features(table, variant=variant)
     groups = table["fight_url"]
-    numeric_cols = [f"{f}_diff" for f in DIFF_NUMERIC_FEATURES]
+    if variant == "diff":
+        numeric_cols = [f"{f}_diff" for f in DIFF_NUMERIC_FEATURES]
+    else:
+        numeric_cols = [f"{f}_a" for f in DIFF_NUMERIC_FEATURES] + [f"{f}_b" for f in DIFF_NUMERIC_FEATURES]
 
-    (MODELS_DIR / "feature_columns.json").write_text(json.dumps(feature_columns, indent=2))
+    (models_dir / "feature_columns.json").write_text(json.dumps(feature_columns, indent=2))
 
     correlation_pairs = pearson_correlation_pairs(X[numeric_cols])
 
@@ -107,20 +113,23 @@ def run():
             model_metrics["cv_mean"] = sum(cv_scores) / len(cv_scores)
             model_metrics["cv_std"] = pd.Series(cv_scores).std()
 
-            joblib.dump(model, MODELS_DIR / f"{target}_{model_name}.joblib")
+            joblib.dump(model, models_dir / f"{target}_{model_name}.joblib")
             target_result["models"][model_name] = model_metrics
 
             print(
-                f"[{target}/{model_name}] acc={model_metrics['accuracy']:.4f} "
+                f"[{variant}/{target}/{model_name}] acc={model_metrics['accuracy']:.4f} "
                 f"macro_f1={model_metrics['macro_f1']:.4f} log_loss={model_metrics['log_loss']:.4f} "
                 f"cv={model_metrics['cv_mean']:.4f}+-{model_metrics['cv_std']:.4f}"
             )
 
         metrics["targets"][target] = target_result
 
-    METRICS_JSON.write_text(json.dumps(metrics, indent=2, default=str))
-    print(f"\nSaved metrics to {METRICS_JSON}")
+    metrics_path = models_dir / "metrics.json"
+    metrics_path.write_text(json.dumps(metrics, indent=2, default=str))
+    print(f"\nSaved metrics to {metrics_path}")
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+
+    run(variant=sys.argv[1] if len(sys.argv) > 1 else DEFAULT_MODEL_VARIANT)
