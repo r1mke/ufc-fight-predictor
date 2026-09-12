@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FighterCard } from "@/components/FighterCard";
 import { MethodProbabilityBars } from "@/components/MethodProbabilityBars";
-import { ModelMetricsPanel } from "@/components/ModelMetricsPanel";
 import { describeFeature } from "@/lib/glossary";
 import type { PredictResponse } from "@/types";
 
@@ -26,11 +25,6 @@ export function PredictionResult({ result }: { result: PredictResponse }) {
           <div>
             <p className="mb-3 text-sm font-medium">Method of victory</p>
             <MethodProbabilityBars method={result.method} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <ModelMetricsPanel title="Winner model" metrics={result.winner_model_metrics} />
-            <ModelMetricsPanel title="Method model" metrics={result.method_model_metrics} />
           </div>
 
           <div>
