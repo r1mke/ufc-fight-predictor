@@ -2,6 +2,7 @@ import type {
   FighterDetail,
   FighterSummary,
   ModelsResponse,
+  ModelVariant,
   ModelVersionsResponse,
   PendingFight,
   PendingFightCreate,
@@ -39,8 +40,9 @@ export function getFighter(fighterId: string): Promise<FighterDetail> {
   return request(`/api/fighters/${fighterId}`);
 }
 
-export function getModels(): Promise<ModelsResponse> {
-  return request(`/api/models`);
+export function getModels(variant?: ModelVariant): Promise<ModelsResponse> {
+  const params = variant ? `?${new URLSearchParams({ variant })}` : "";
+  return request(`/api/models${params}`);
 }
 
 export function predictFight(body: PredictRequest): Promise<PredictResponse> {

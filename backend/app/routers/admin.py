@@ -1,6 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 
-from app.config import ADMIN_TOKEN
 from app.schemas import (
     ModelVersionsResponse,
     PendingFight,
@@ -15,9 +14,9 @@ from app.services import model_version_service, retrain_service, scraper_service
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
-def require_admin_token(admin_token: str = Header(..., alias="Admin-Token")):
-    if not ADMIN_TOKEN or admin_token != ADMIN_TOKEN:
-        raise HTTPException(status_code=401, detail="Invalid or missing Admin-Token")
+def require_admin_token(admin_token: str | None = Header(None, alias="Admin-Token")):
+    # Admin page is free access for now - token check disabled.
+    return
 
 
 @router.post("/scrape", response_model=ScrapeStatus, dependencies=[Depends(require_admin_token)])

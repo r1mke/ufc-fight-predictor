@@ -2,7 +2,7 @@
 
 > Ovaj fajl je "living document" — ažurira se kroz razgovor. Sadrži: šta smo analizirali, šta smo odlučili, i šta je još otvoreno. Čita se prije nego što se počne s implementacijom.
 
-## Status: MVP IMPLEMENTIRAN + dodatak za scraping/retreniranje/verzionisanje modela (sve verifikovano end-to-end)
+## Status: MVP IMPLEMENTIRAN + dodatak za scraping/retreniranje/verzionisanje modela + eksperiment sa alternativnom feature reprezentacijom (diff vs concat) (sve verifikovano end-to-end)
 
 ---
 
@@ -135,7 +135,12 @@ Kod živi u `ML/ufc-predictor/` (`backend/` — Python/FastAPI, `frontend/` — 
 
 ### 6.1 Data pipeline i feature engineering
 - `data_pipeline.py`: parsira Height/Weight/Reach/postotke/DOB, normalizuje Method u 3 klase i Weight_Class u 15 kanonskih kategorija (uključujući "Unknown" za rijetke pred-UFC turnirske mečeve bez kategorije). Od 8551 mečeva, 8377 ostaje nakon filtriranja Draw/NC/Overturned/DQ/Could Not Continue/Other (~2%).
-- `features.py`: point-in-time rekonstrukcija (cumsum-minus-current trik za agregate, jednoprolazna petlja po borcu za win streak), imputacija Height/Reach/Weight (regresija/medijan po kategoriji + missing-flag), augmentacija zamjenom strana (16754 redova = 2×8377, savršeno balansirano po `winner_is_a`).
+- `features.py`: **dva odvojena mjesta gdje se "jedan meč" razdvaja u dva reda**, iz različitih razloga:
+  1. `build_history_long()` — da bi se career agregati (broj pobjeda, win streak, prosjeci) mogli računati po borcu kroz vrijeme (`groupby("fighter_name")`), svaki od 8377 mečeva se prvo pretvara u dva reda (jedan iz perspektive svakog borca) → 16754-redni međukorak, nad kojim se onda radi point-in-time rekonstrukcija (cumsum-minus-current trik za agregate, jednoprolazna petlja po borcu za win streak).
+  2. Kasnije, u finalnoj trening tabeli, svaki (već spojen par borac-A/borac-B) meč se **ponovo** duplicira zamjenom strana (A↔B, obrnut predznak razlike, obrnuta oznaka pobjednika) da model ne bude osjetljiv na redoslijed Fighter_1/Fighter_2 → opet 16754 redova (2×8377), savršeno balansirano po `winner_is_a`.
+
+  Ova dva koraka rade istu stvar ("1 red → 2 reda") na različitim mjestima pipeline-a i s različitom svrhom — lako ih je pobrkati, otud ova napomena.
+- Imputacija Height/Reach/Weight (regresija/medijan po kategoriji + missing-flag).
 - **Otkriven i ispravljen bug tokom pisanja unit testova**: `win_streak` kolona je originalno računata pogrešno zbog pandas `groupby.apply` nekonzistentnosti (vraćao DataFrame umjesto Series u određenim slučajevima) — testovi (`test_win_streak_resets_on_loss`) su to uhvatili prije treniranja modela.
 - **Poznato ograničenje (dokumentovano, ne popravljeno)**: 7 imena boraca (14 stvarnih osoba, ~0.3%) su duplikati u `ufc_fighters_final.csv` (npr. dva različita "Bruno Silva"). Pošto meč-dataset nosi samo imena (ne URL), point-in-time "forma" za ta imena miješa istorije oba borca. Za live predikciju, statički atributi (visina/reach/starost) su ispravni jer se biraju po `fighter_id` (URL), ali rolling stats (win streak, prosjeci) nisu 100% pouzdani za tih 14 boraca. Prihvaćeno kao ograničenje niske težine (analogno "heurističkim oznakama" u Musicle radu).
 
@@ -191,8 +196,18 @@ Dataset staje na 2026-03-07; ova nadogradnja rješava kako uvesti novije mečeve
 - Retreniranje je blokirajuće (jedno odjednom, in-memory status/lock) — dovoljno za ličnu upotrebu, ne za više istovremenih admina.
 - Scraping se pokreće ručno (dugme), ne po rasporedu (cron) — svjesna odluka da admin kontroliše kad se šalju zahtjevi ka eksternom sajtu.
 
+### 6.7 Eksperiment: alternativna feature reprezentacija (diff vs concat)
+
+Pitanje koje je pokrenulo ovo: da li bi trening nad drugačije pripremljenim podacima (borčeve i protivnikove statistike odvojeno, umjesto gotove razlike) dao drugačiju tačnost. Puni opis metodologije i rezultata: `TECHNICAL_OVERVIEW.md` sekcija 12.
+
+- Dodata druga varijanta feature-a ("concat": `{feat}_a`/`{feat}_b` odvojeno) paralelno postojećoj ("diff": `{feat}_diff = a − b`), potpuno aditivno — `variant` parametar podrazumijevano ostaje `"diff"`, ništa u postojećem toku (uključujući automatski retrain iz 6.6) nije promijenjeno u ponašanju. Provjereno: `build_training_table(variant="diff")` daje bit-po-bit identičan `training_table.parquet` kao prije ove izmjene.
+- Concat modeli i metrike žive odvojeno u `models/variants/concat/` (gitignored, kao i postojeći produkcijski modeli — treba ih ručno generisati preko `python -m app.ml.features concat && python -m app.ml.train concat`), i backend ih lijeno (lazy) učitava tek kad se stvarno zatraže.
+- Frontend: dodat drugi dropdown ("Feature engineering") pored postojećeg izbora modela, tako da se za bilo koji od 3 modela može birati i reprezentacija.
+- **Rezultat**: za Winner, razlika je zanemarljiva (Logistic Regression i Random Forest identični, LightGBM +0.96pp). Za Method, Logistic Regression je jedini koji jasno pogorša (-4.77pp) — vjerovatno overfitting zbog duplog broja parametara na relativno malo mečeva. Zaključak: diff-encoding već hvata skoro sav koristan signal; sama reparametrizacija (bez novih feature-a poput omjera ili eksplicitnih interakcija) nije donijela jasan dobitak. Zadržano kao dostupna opcija za poređenje, ne kao zamjena za produkcijski diff pristup.
+
 ## 7. Otvoreno / za kasnije
 - Seminarski rad (dokument analogan Musicle radu) za ovu aplikaciju — podaci za njega (metrike, ANOVA, korelacije, ograničenja) su već generisani u `models/metrics.json`, treba ih samo pretočiti u tekst/grafove.
+- Diff vs concat (6.7): probati druge reprezentacije koje diff ne hvata (npr. omjer `a/b` umjesto razlike, eksplicitni interakcijski feature-i) i formalni test statističke značajnosti (npr. paired bootstrap) na razlikama iz 6.7 prije nego što se bilo koja od njih proglasi stvarnim poboljšanjem.
 - Eventualno: SHAP objašnjenja po pojedinačnoj predikciji (trenutno se prikazuje samo globalna feature importance, ne "zašto baš OVA predikcija").
 - Eventualno: endpoint koji vraća kanonsku listu weight class-a umjesto hardkodovane liste na frontend-u.
 - Eventualno: kreiranje novog borca direktno kroz ručnu formu na admin stranici (trenutno "Dodaj ručno" radi samo s postojećim borcima — kreiranje novog borca je rezervisano za scraping tok).

@@ -5,7 +5,7 @@ import { CompareForm } from "@/components/CompareForm";
 import { Glossary } from "@/components/Glossary";
 import { PredictionResult } from "@/components/PredictionResult";
 import { predictFight } from "@/lib/api";
-import type { FighterSummary, ModelName, PredictResponse } from "@/types";
+import type { FighterSummary, ModelName, ModelVariant, PredictResponse } from "@/types";
 
 export default function Home() {
   const [result, setResult] = useState<PredictResponse | null>(null);
@@ -17,6 +17,7 @@ export default function Home() {
     fighter2: FighterSummary;
     weightClass: string;
     modelName: ModelName;
+    variant: ModelVariant;
   }) {
     setLoading(true);
     setError(null);
@@ -26,6 +27,7 @@ export default function Home() {
         fighter2_id: params.fighter2.id,
         weight_class: params.weightClass,
         model_name: params.modelName,
+        variant: params.variant,
       });
       setResult(response);
     } catch (err) {

@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FighterCard } from "@/components/FighterCard";
 import { MethodProbabilityBars } from "@/components/MethodProbabilityBars";
-import { ModelMetricsPanel } from "@/components/ModelMetricsPanel";
 import { describeFeature } from "@/lib/glossary";
 import type { PredictResponse } from "@/types";
 
@@ -28,18 +27,15 @@ export function PredictionResult({ result }: { result: PredictResponse }) {
             <MethodProbabilityBars method={result.method} />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <ModelMetricsPanel title="Winner model" metrics={result.winner_model_metrics} />
-            <ModelMetricsPanel title="Method model" metrics={result.method_model_metrics} />
-          </div>
-
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Most influential factors (method of victory)
             </p>
             <div className="flex flex-wrap gap-2">
               {result.top_features.slice(0, 6).map((f) => {
-                const label = f.feature.replace(/_diff$/, "").replace(/_/g, " ");
+                // "diff" variant features end in _diff; "concat" variant features
+                // end in _a/_b (fighter_a / fighter_b) instead - strip either.
+                const label = f.feature.replace(/_(diff|a|b)$/, "").replace(/_/g, " ");
                 const description = describeFeature(f.feature);
                 const pill = (
                   <span className="cursor-help rounded-full border px-2.5 py-1 text-xs text-muted-foreground">

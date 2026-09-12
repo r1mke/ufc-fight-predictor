@@ -12,7 +12,13 @@ import {
 } from "@/components/ui/select";
 import { FighterSearch } from "@/components/FighterSearch";
 import { WEIGHT_CLASSES } from "@/lib/constants";
-import { MODEL_LABELS, type FighterSummary, type ModelName } from "@/types";
+import {
+  MODEL_LABELS,
+  MODEL_VARIANT_LABELS,
+  type FighterSummary,
+  type ModelName,
+  type ModelVariant,
+} from "@/types";
 
 interface Props {
   onPredict: (params: {
@@ -20,11 +26,13 @@ interface Props {
     fighter2: FighterSummary;
     weightClass: string;
     modelName: ModelName;
+    variant: ModelVariant;
   }) => void;
   loading: boolean;
 }
 
 const MODEL_NAMES: ModelName[] = ["logistic_regression", "random_forest", "lightgbm"];
+const MODEL_VARIANTS: ModelVariant[] = ["diff", "concat"];
 
 export function CompareForm({ onPredict, loading }: Props) {
   const [fighter1, setFighter1] = useState<FighterSummary | null>(null);
@@ -32,6 +40,7 @@ export function CompareForm({ onPredict, loading }: Props) {
   const [weightClass, setWeightClass] = useState<string>("");
   const [weightClassTouched, setWeightClassTouched] = useState(false);
   const [modelName, setModelName] = useState<ModelName>("lightgbm");
+  const [variant, setVariant] = useState<ModelVariant>("diff");
 
   // Auto-suggest the weight class from whichever fighter was picked, unless
   // the user has already overridden it themselves.
@@ -61,7 +70,7 @@ export function CompareForm({ onPredict, loading }: Props) {
         <p className="text-sm text-destructive">Pick two different fighters.</p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-muted-foreground">Weight class</label>
           <Select
@@ -99,6 +108,22 @@ export function CompareForm({ onPredict, loading }: Props) {
             </SelectContent>
           </Select>
         </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-muted-foreground">Feature engineering</label>
+          <Select value={variant} onValueChange={(v) => setVariant(v as ModelVariant)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MODEL_VARIANTS.map((v) => (
+                <SelectItem key={v} value={v}>
+                  {MODEL_VARIANT_LABELS[v]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Button
@@ -108,7 +133,7 @@ export function CompareForm({ onPredict, loading }: Props) {
         onClick={() =>
           fighter1 &&
           fighter2 &&
-          onPredict({ fighter1, fighter2, weightClass, modelName })
+          onPredict({ fighter1, fighter2, weightClass, modelName, variant })
         }
       >
         {loading && <Loader2 className="mr-2 size-4 animate-spin" />}

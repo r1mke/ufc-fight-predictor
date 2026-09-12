@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { PendingFightForm } from "@/components/PendingFightForm";
 import {
   deletePendingFight,
@@ -19,7 +18,9 @@ import {
 } from "@/lib/api";
 import type { JobStatus, ModelVersion, PendingFight } from "@/types";
 
-const TOKEN_KEY = "ufc-admin-token";
+// Admin page is free access for now - the backend doesn't check this value,
+// it's only kept because the API functions take a token argument.
+const ADMIN_TOKEN = "free-access";
 
 function StatusBadge({ status }: { status: PendingFight["status"] }) {
   const variant = status === "pending" ? "secondary" : status === "approved" ? "default" : "outline";
@@ -40,9 +41,6 @@ function isAlreadyRunningError(err: unknown): boolean {
 }
 
 export default function AdminPage() {
-  const [adminToken, setAdminToken] = useState<string | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-
   const [pending, setPending] = useState<PendingFight[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<PendingFight | "new" | null>(null);
@@ -55,11 +53,6 @@ export default function AdminPage() {
 
   const scrapePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const retrainPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    const saved = sessionStorage.getItem(TOKEN_KEY);
-    if (saved) setAdminToken(saved);
-  }, []);
 
   // Tick once a second while either job is running, to drive the elapsed-time display.
   useEffect(() => {
@@ -100,83 +93,75 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if (!adminToken) return;
-    refreshAll(adminToken);
+    refreshAll(ADMIN_TOKEN);
     // A scrape/retrain may already be running (started from another tab, or still
     // finishing from before a page reload) - sync onto it instead of losing track.
     (async () => {
       const [scrape, retrain] = await Promise.all([
-        getScrapeStatus(adminToken),
-        getRetrainStatus(adminToken),
+        getScrapeStatus(ADMIN_TOKEN),
+        getRetrainStatus(ADMIN_TOKEN),
       ]);
       setScrapeStatus(scrape);
       setRetrainStatus(retrain);
       if (scrape.status === "running") {
-        pollUntilDone(scrapePollRef, () => getScrapeStatus(adminToken), setScrapeStatus, () => refreshAll(adminToken));
+        pollUntilDone(scrapePollRef, () => getScrapeStatus(ADMIN_TOKEN), setScrapeStatus, () => refreshAll(ADMIN_TOKEN));
       }
       if (retrain.status === "running") {
-        pollUntilDone(retrainPollRef, () => getRetrainStatus(adminToken), setRetrainStatus, () => {
+        pollUntilDone(retrainPollRef, () => getRetrainStatus(ADMIN_TOKEN), setRetrainStatus, () => {
           setSelected(new Set());
-          refreshAll(adminToken);
+          refreshAll(ADMIN_TOKEN);
         });
       }
     })();
-  }, [adminToken]);
-
-  function handleTokenSubmit() {
-    sessionStorage.setItem(TOKEN_KEY, tokenInput);
-    setAdminToken(tokenInput);
-  }
+  }, []);
 
   async function handleScrape() {
-    if (!adminToken) return;
     try {
-      const status = await triggerScrape(adminToken);
+      const status = await triggerScrape(ADMIN_TOKEN);
       setScrapeStatus(status);
-      pollUntilDone(scrapePollRef, () => getScrapeStatus(adminToken), setScrapeStatus, () => refreshAll(adminToken));
+      pollUntilDone(scrapePollRef, () => getScrapeStatus(ADMIN_TOKEN), setScrapeStatus, () => refreshAll(ADMIN_TOKEN));
     } catch (err) {
       if (!isAlreadyRunningError(err)) {
         setError(err instanceof Error ? err.message : "Failed to start scrape");
         return;
       }
       // Someone else already kicked one off - just sync onto it instead of erroring.
-      const status = await getScrapeStatus(adminToken);
+      const status = await getScrapeStatus(ADMIN_TOKEN);
       setScrapeStatus(status);
       if (status.status === "running") {
-        pollUntilDone(scrapePollRef, () => getScrapeStatus(adminToken), setScrapeStatus, () => refreshAll(adminToken));
+        pollUntilDone(scrapePollRef, () => getScrapeStatus(ADMIN_TOKEN), setScrapeStatus, () => refreshAll(ADMIN_TOKEN));
       }
     }
   }
 
   async function handleRetrain() {
-    if (!adminToken || selected.size === 0) return;
+    if (selected.size === 0) return;
     try {
-      const status = await triggerRetrain(adminToken, Array.from(selected));
+      const status = await triggerRetrain(ADMIN_TOKEN, Array.from(selected));
       setRetrainStatus(status);
-      pollUntilDone(retrainPollRef, () => getRetrainStatus(adminToken), setRetrainStatus, () => {
+      pollUntilDone(retrainPollRef, () => getRetrainStatus(ADMIN_TOKEN), setRetrainStatus, () => {
         setSelected(new Set());
-        refreshAll(adminToken);
+        refreshAll(ADMIN_TOKEN);
       });
     } catch (err) {
       if (!isAlreadyRunningError(err)) {
         setError(err instanceof Error ? err.message : "Failed to start retrain");
         return;
       }
-      const status = await getRetrainStatus(adminToken);
+      const status = await getRetrainStatus(ADMIN_TOKEN);
       setRetrainStatus(status);
       if (status.status === "running") {
-        pollUntilDone(retrainPollRef, () => getRetrainStatus(adminToken), setRetrainStatus, () => {
+        pollUntilDone(retrainPollRef, () => getRetrainStatus(ADMIN_TOKEN), setRetrainStatus, () => {
           setSelected(new Set());
-          refreshAll(adminToken);
+          refreshAll(ADMIN_TOKEN);
         });
       }
     }
   }
 
   async function handleReject(id: string) {
-    if (!adminToken) return;
-    await deletePendingFight(adminToken, id);
-    refreshAll(adminToken);
+    await deletePendingFight(ADMIN_TOKEN, id);
+    refreshAll(ADMIN_TOKEN);
   }
 
   function toggleSelected(id: string) {
@@ -186,22 +171,6 @@ export default function AdminPage() {
       else next.add(id);
       return next;
     });
-  }
-
-  if (!adminToken) {
-    return (
-      <main className="mx-auto flex max-w-sm flex-1 flex-col justify-center gap-3 px-4">
-        <h1 className="text-xl font-semibold">Admin access</h1>
-        <Input
-          type="password"
-          placeholder="Admin token"
-          value={tokenInput}
-          onChange={(e) => setTokenInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleTokenSubmit()}
-        />
-        <Button onClick={handleTokenSubmit} disabled={!tokenInput}>Continue</Button>
-      </main>
-    );
   }
 
   const pendingOnly = pending.filter((p) => p.status === "pending");
@@ -245,12 +214,12 @@ export default function AdminPage() {
 
           {editing && (
             <PendingFightForm
-              adminToken={adminToken}
+              adminToken={ADMIN_TOKEN}
               fight={editing === "new" ? undefined : editing}
               onCancel={() => setEditing(null)}
               onSaved={() => {
                 setEditing(null);
-                refreshAll(adminToken);
+                refreshAll(ADMIN_TOKEN);
               }}
             />
           )}
@@ -316,8 +285,8 @@ export default function AdminPage() {
                   size="sm"
                   onClick={async () => {
                     const { restoreModelVersion } = await import("@/lib/api");
-                    await restoreModelVersion(adminToken, v.version_id);
-                    refreshAll(adminToken);
+                    await restoreModelVersion(ADMIN_TOKEN, v.version_id);
+                    refreshAll(ADMIN_TOKEN);
                   }}
                 >
                   <RotateCcw className="mr-2 size-4" /> Restore

@@ -39,6 +39,17 @@ export const MODEL_LABELS: Record<ModelName, string> = {
   lightgbm: "LightGBM",
 };
 
+// Feature-engineering variant: how a fighter matchup is turned into model
+// input. "diff" (default, production) subtracts fighter B's stats from
+// fighter A's; "concat" (experimental) keeps both fighters' stats as separate
+// columns and lets the model learn its own comparison.
+export type ModelVariant = "diff" | "concat";
+
+export const MODEL_VARIANT_LABELS: Record<ModelVariant, string> = {
+  diff: "Standard (A − B difference)",
+  concat: "Experimental (side-by-side stats)",
+};
+
 export interface ModelMetrics {
   model_name: ModelName;
   accuracy: number;
@@ -78,6 +89,7 @@ export interface PredictRequest {
   weight_class: string;
   model_name: ModelName;
   is_title_fight?: boolean;
+  variant?: ModelVariant;
 }
 
 export interface WinnerPrediction {
@@ -96,6 +108,7 @@ export interface PredictResponse {
   winner: WinnerPrediction;
   method: MethodPrediction;
   model_name: ModelName;
+  variant: ModelVariant;
   winner_model_metrics: ModelMetrics;
   method_model_metrics: ModelMetrics;
   top_features: FeatureImportance[];

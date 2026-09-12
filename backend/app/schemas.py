@@ -64,6 +64,10 @@ class PredictRequest(BaseModel):
     weight_class: str
     model_name: str
     is_title_fight: bool = False
+    # Feature-engineering variant: "diff" (default, production) or "concat"
+    # (experimental). Omitted by older/unaware clients, which keeps them on
+    # the exact same behavior as before this field existed.
+    variant: str = "diff"
 
 
 class WinnerPrediction(BaseModel):
@@ -82,6 +86,7 @@ class PredictResponse(BaseModel):
     winner: WinnerPrediction
     method: MethodPrediction
     model_name: str
+    variant: str
     winner_model_metrics: ModelMetrics
     method_model_metrics: ModelMetrics
     top_features: list[dict]

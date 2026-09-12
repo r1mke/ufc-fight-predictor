@@ -241,7 +241,42 @@ def build_pairwise_row(a_stats: dict, b_stats: dict) -> dict:
     return row
 
 
+def build_pairwise_row_concat(a_stats: dict, b_stats: dict) -> dict:
+    """Same inputs as build_pairwise_row(), but keeps fighter A's and fighter
+    B's raw values as separate columns instead of pre-computing (a - b). Used
+    by the "concat" variant, which lets the model learn its own comparison
+    instead of being forced into a linear difference."""
+    row = {}
+    for feat in DIFF_NUMERIC_FEATURES:
+        row[f"{feat}_a"] = a_stats[feat]
+        row[f"{feat}_b"] = b_stats[feat]
+    row["stance_a"] = a_stats["stance"]
+    row["stance_b"] = b_stats["stance"]
+    row["reach_missing_a"] = a_stats["reach_missing"]
+    row["reach_missing_b"] = b_stats["reach_missing"]
+    row["height_missing_a"] = a_stats["height_missing"]
+    row["height_missing_b"] = b_stats["height_missing"]
+    row["weight_missing_a"] = a_stats["weight_missing"]
+    row["weight_missing_b"] = b_stats["weight_missing"]
+    row["is_debut_a"] = a_stats["is_debut"]
+    row["is_debut_b"] = b_stats["is_debut"]
+    return row
+
+
 ALL_FEATURE_COLUMNS = [f"{f}_diff" for f in DIFF_NUMERIC_FEATURES] + CATEGORICAL_FEATURES + FLAG_FEATURES
+
+# Alternative feature schema: same underlying per-fighter numbers, but given to
+# the model as separate fighter_a/fighter_b columns instead of a pre-computed
+# (a - b) difference. See build_pairwise_row_concat() and variant="concat" on
+# build_training_table()/build_and_save().
+ALL_FEATURE_COLUMNS_CONCAT = (
+    [f"{f}_a" for f in DIFF_NUMERIC_FEATURES]
+    + [f"{f}_b" for f in DIFF_NUMERIC_FEATURES]
+    + CATEGORICAL_FEATURES
+    + FLAG_FEATURES
+)
+
+FEATURE_COLUMNS_BY_VARIANT = {"diff": ALL_FEATURE_COLUMNS, "concat": ALL_FEATURE_COLUMNS_CONCAT}
 
 
 def encode_features(df: pd.DataFrame, reference_columns=None):
@@ -266,10 +301,16 @@ def _dedupe_fighters_by_record(fighters_clean: pd.DataFrame) -> pd.DataFrame:
     return fc.sort_values("_record_total", ascending=False).drop_duplicates("fighter_name", keep="first")
 
 
-def build_training_table(fighters_clean: pd.DataFrame, fights_clean: pd.DataFrame):
+def build_training_table(fighters_clean: pd.DataFrame, fights_clean: pd.DataFrame, variant: str = "diff"):
     """Assembles the full (augmented, leakage-safe) training table. Returns
     (training_df, imputation_params) - the latter must be persisted and reused
-    at inference time."""
+    at inference time.
+
+    variant="diff" (default, unchanged): numeric features are (a - b) differences.
+    variant="concat": numeric features are fighter_a and fighter_b raw values,
+    kept separate instead of pre-subtracted."""
+    if variant not in FEATURE_COLUMNS_BY_VARIANT:
+        raise ValueError(f"unknown variant: {variant}")
     history_long = build_history_long(fights_clean)
     prior_stats = compute_point_in_time_stats(history_long)
     primary_wc = compute_primary_weight_class(history_long)
@@ -311,34 +352,46 @@ def build_training_table(fighters_clean: pd.DataFrame, fights_clean: pd.DataFram
 
     full = pd.concat([merged, swapped], ignore_index=True)
 
-    keep = ALL_FEATURE_COLUMNS + ["winner_is_a", "method_class", "fight_url", "event_date"]
-    training_table = full[keep].dropna(subset=[f"{f}_diff" for f in DIFF_NUMERIC_FEATURES])
+    feature_columns = FEATURE_COLUMNS_BY_VARIANT[variant]
+    if variant == "diff":
+        dropna_subset = [f"{f}_diff" for f in DIFF_NUMERIC_FEATURES]
+    else:
+        dropna_subset = [f"{f}_a" for f in DIFF_NUMERIC_FEATURES] + [f"{f}_b" for f in DIFF_NUMERIC_FEATURES]
+
+    keep = feature_columns + ["winner_is_a", "method_class", "fight_url", "event_date"]
+    training_table = full[keep].dropna(subset=dropna_subset)
 
     return training_table.reset_index(drop=True), imputation_params
 
 
-def build_and_save():
+def build_and_save(variant: str = "diff"):
     """Reads the cleaned parquet files, builds the training table, and writes
-    training_table.parquet + imputation.json. Shared by the CLI entry point
-    below and app.services.retrain_service."""
+    training_table.parquet (or training_table_<variant>.parquet for a
+    non-default variant) + imputation.json. Shared by the CLI entry point
+    below and app.services.retrain_service (which always uses the default
+    "diff" variant - the automated admin retrain flow is unaffected by
+    variant support)."""
     import json
 
-    from app.config import (
-        FIGHTERS_CLEAN_PARQUET, FIGHTS_CLEAN_PARQUET, IMPUTATION_JSON, TRAINING_TABLE_PARQUET,
-    )
+    from app.config import FIGHTERS_CLEAN_PARQUET, FIGHTS_CLEAN_PARQUET, IMPUTATION_JSON, training_table_path
 
     fighters = pd.read_parquet(FIGHTERS_CLEAN_PARQUET)
     fights = pd.read_parquet(FIGHTS_CLEAN_PARQUET)
 
-    table, imputation_params = build_training_table(fighters, fights)
-    table.to_parquet(TRAINING_TABLE_PARQUET, index=False)
+    table, imputation_params = build_training_table(fighters, fights, variant=variant)
+    table.to_parquet(training_table_path(variant), index=False)
+    # Imputation params depend only on fighters_clean, not on the feature
+    # schema, so they're identical across variants - written once, shared.
     IMPUTATION_JSON.write_text(json.dumps(imputation_params, indent=2))
     return table
 
 
 if __name__ == "__main__":
-    table = build_and_save()
+    import sys
 
-    print(f"training_table: {len(table)} rows, {len(ALL_FEATURE_COLUMNS)} raw feature columns")
+    variant = sys.argv[1] if len(sys.argv) > 1 else "diff"
+    table = build_and_save(variant=variant)
+
+    print(f"variant={variant}: training_table: {len(table)} rows, {len(FEATURE_COLUMNS_BY_VARIANT[variant])} raw feature columns")
     print(f"winner_is_a distribution:\n{table['winner_is_a'].value_counts()}")
     print(f"method_class distribution:\n{table['method_class'].value_counts()}")

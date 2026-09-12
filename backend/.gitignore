@@ -9,6 +9,7 @@ data/raw/user_submitted_*.csv
 models/*.joblib
 models/*.json
 !models/.gitkeep
+models/variants/
 models_archive/*
 !models_archive/.gitkeep
 .env
