@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<title>Tok jedne predikcije — UFC Fight Predictor</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 12px;
+    margin: 0;
+  }
+  .cover {
+    height: 261mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    color: #b91c1c;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .cover h1 { font-size: 32px; margin: 0 0 10px 0; line-height: 1.18; }
+  .cover p.subtitle { font-size: 14.5px; color: #444; max-width: 440px; }
+  .cover .matchup { margin-top: 26px; display: flex; align-items: center; gap: 14px; }
+  .cover .fighter-chip { padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 15px; color: white; }
+  .cover .fighter-chip.a { background: #b91c1c; }
+  .cover .fighter-chip.b { background: #1e40af; }
+  .cover .vs { color: #999; font-weight: 700; font-size: 13px; }
+  .cover .meta { margin-top: 40px; font-size: 11px; color: #777; }
+  .cover .pipeline-wrap { margin-top: 44px; }
+
+  h1 { color: #111; font-size: 20px; border-bottom: 3px solid #b91c1c; padding-bottom: 8px; margin-top: 0; }
+  h2 { color: #b91c1c; font-size: 15px; margin-top: 24px; }
+  h3 { font-size: 12.5px; margin-top: 16px; margin-bottom: 6px; }
+  .section { page-break-before: always; }
+  p { margin: 8px 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 14px 0; font-size: 10.5px; }
+  th, td { border: 1px solid #ddd; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafafa; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .callout { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 9px 13px; margin: 12px 0; font-size: 11px; }
+  .callout.warn { background: #fffbeb; border-color: #fde68a; }
+  .callout.info { background: #eff6ff; border-color: #bfdbfe; }
+  .callout.finding { background: #fdf4ff; border-color: #e9d5ff; }
+  .callout b { display: block; margin-bottom: 4px; }
+  .callout, table, .diagram-box, .fighter-cards, .formula-box { page-break-inside: avoid; }
+
+  .formula-box { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-family: "Cambria Math", Cambria, Georgia, serif; font-size: 13px; text-align: center; }
+  .formula-box .label { font-family: -apple-system, "Segoe UI", Arial, sans-serif; font-size: 9.5px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+
+  .fighter-cards { display: flex; gap: 14px; margin: 14px 0; }
+  .fcard { flex: 1; border-radius: 10px; padding: 14px; border: 2px solid; }
+  .fcard.a { border-color: #b91c1c; background: #fef2f2; }
+  .fcard.b { border-color: #1e40af; background: #eff6ff; }
+  .fcard h3 { margin: 0 0 2px 0; font-size: 14px; }
+  .fcard .corner { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+  .fcard.a .corner { color: #b91c1c; }
+  .fcard.b .corner { color: #1e40af; }
+  .fcard .record { font-size: 11px; color: #444; margin-bottom: 8px; }
+  .fcard table { font-size: 10px; margin: 4px 0; }
+  .fcard table td { border: none; padding: 2px 0; }
+  .fcard table td.k { color: #666; width: 58%; }
+  .fcard table td.v { font-weight: 600; text-align: right; }
+
+  .pipeline { display: flex; align-items: stretch; gap: 0; margin: 10px 0; }
+  .pipeline .pbox { flex: 1; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 8px; text-align: center; font-size: 10px; }
+  .pipeline .pbox .n { font-weight: 700; color: #b91c1c; font-size: 9px; display: block; margin-bottom: 3px; }
+  .pipeline .parrow { display: flex; align-items: center; justify-content: center; width: 20px; color: #94a3b8; font-size: 16px; }
+
+  .tornado-row { display: flex; align-items: center; gap: 6px; margin: 2.5px 0; font-size: 9.5px; }
+  .tornado-label { width: 152px; flex-shrink: 0; text-align: right; padding-right: 4px; color: #333; }
+  .tornado-mid { display: flex; width: 270px; flex-shrink: 0; height: 12px; }
+  .tornado-left { flex: 1; display: flex; justify-content: flex-end; }
+  .tornado-right { flex: 1; display: flex; justify-content: flex-start; }
+  .tornado-centerline { width: 1px; background: #94a3b8; align-self: stretch; }
+  .tornado-bar { height: 11px; border-radius: 2px; }
+  .tornado-bar.neg { background: #1e40af; }
+  .tornado-bar.pos { background: #b91c1c; }
+  .tornado-value { width: 56px; font-size: 9.5px; text-align: left; font-variant-numeric: tabular-nums; }
+  .tornado-legend { display: flex; gap: 18px; margin: 8px 0 4px 422px; font-size: 9.5px; }
+  .tornado-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .tornado-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .flowbox-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; }
+  .flowbox { border: 1.5px solid #cbd5e1; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font-size: 9.5px; text-align: center; min-width: 108px; }
+  .flowbox .t { font-weight: 700; margin-bottom: 3px; }
+  .flowbox.decision .t { color: #6d28d9; }
+  .flowbox.ko .t { color: #b91c1c; }
+  .flowbox.sub .t { color: #0f766e; }
+  .flowarrow { color: #94a3b8; font-size: 15px; }
+  .softbox { border: 1.5px solid #b91c1c; background: #fef2f2; border-radius: 8px; padding: 8px 14px; font-size: 10px; font-weight: 700; color: #b91c1c; text-align: center; }
+
+  .probbar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11px; }
+  .probbar-label { width: 100px; flex-shrink: 0; font-weight: 600; }
+  .probbar-track { flex: 1; background: #eee; border-radius: 5px; height: 16px; overflow: hidden; }
+  .probbar-fill { height: 100%; display: flex; align-items: center; padding-left: 6px; color: white; font-size: 9.5px; font-weight: 700; }
+  .probbar-value { width: 52px; text-align: right; font-weight: 700; }
+
+  .bignum { display: flex; gap: 14px; margin: 14px 0; }
+  .bignum .bn { flex: 1; border-radius: 10px; padding: 16px; text-align: center; color: white; }
+  .bignum .bn .p { font-size: 30px; font-weight: 800; line-height: 1; }
+  .bignum .bn .l { font-size: 10.5px; margin-top: 6px; opacity: 0.92; }
+
+  .footer-note { margin-top: 24px; font-size: 9.5px; color: #999; }
+  .grp-compare { display: flex; gap: 24px; margin: 14px 0; align-items: flex-end; }
+  .grp-compare .gc { flex: 1; }
+  .grp-compare .gc-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .grp-compare .gc-label { width: 130px; font-size: 10px; }
+  .grp-compare .gc-track { flex: 1; background: #eee; border-radius: 4px; height: 13px; }
+  .grp-compare .gc-fill { height: 100%; border-radius: 4px; }
+  .grp-compare .gc-fill.winner { background: #16a34a; }
+  .grp-compare .gc-fill.method { background: #b91c1c; }
+  .grp-compare .gc-val { width: 68px; font-size: 9.5px; text-align: right; font-variant-numeric: tabular-nums; }
+  .grp-title { font-size: 11px; font-weight: 700; text-align: center; margin-bottom: 6px; color: #444; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="kicker">UFC Fight Predictor · Vizuelni vodič kroz jednu predikciju</div>
+  <h1>Šta se dešava kad kliknem<br>"Predict"?</h1>
+  <p class="subtitle">Korak po korak, sa stvarnim brojevima iz aplikacije: kako se dva izabrana borca pretvaraju u vektor podataka, kako se taj vektor množi s naučenim težinama, i kako se dobija konačna vjerovatnoća — za oba modela koja aplikacija istovremeno prikazuje (pobjednik i način završetka).</p>
+
+  <div class="matchup">
+    <div class="fighter-chip a">Conor McGregor</div>
+    <div class="vs">VS</div>
+    <div class="fighter-chip b">Khabib Nurmagomedov</div>
+  </div>
+
+  <div class="pipeline-wrap" style="width:100%;">
+    <div class="pipeline">
+      <div class="pbox"><span class="n">1</span>Sirovi CSV<br>podaci</div>
+      <div class="parrow">&#8594;</div>
+      <div class="pbox"><span class="n">2</span>Point-in-time<br>feature engineering</div>
+      <div class="parrow">&#8594;</div>
+      <div class="pbox"><span class="n">3</span>Standardizacija<br>(z-score)</div>
+      <div class="parrow">&#8594;</div>
+      <div class="pbox"><span class="n">4</span>Model: težine<br>(Logistic Regression)</div>
+      <div class="parrow">&#8594;</div>
+      <div class="pbox"><span class="n">5</span>Rezultat:<br>vjerovatnoće</div>
+    </div>
+  </div>
+
+  <div class="meta">Kategorija: Lightweight (155 lbs) · Title fight: da · Model prikazan u ovom dokumentu: <b>Logistic Regression</b><br>Generisano iz stvarno pokrenute aplikacije (backend API, live inference) · Septembar 2026</div>
+</div>
+
+<!-- ============ PAGE: MODEL CHOICE NOTE ============ -->
+<h1>0. Zašto baš Logistic Regression za ovaj prikaz</h1>
+<p>Aplikacija nudi tri modela: <b>Logistic Regression</b>, <b>Random Forest</b> i <b>LightGBM</b>. Sva tri rade identičan prvi korak (isti ulazni vektor, ista standardizacija) — razlikuju se samo u tome <i>kako</i> taj vektor pretvaraju u vjerovatnoću:</p>
+<div class="pros-cons" style="display:flex;gap:14px;margin-top:10px;">
+  <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;">
+    <b style="color:#15803d;">Logistic Regression — eksplicitne težine</b>
+    Svaki feature ima <i>jedan broj</i> (težinu) koji se direktno množi s vrijednošću featurea. Cijeli izračun stane u jednu tabelu — zato je idealan za ovaj vodič: možemo pokazati <i>tačno</i> koliko je koji podatak doprinio rezultatu.
+  </div>
+  <div style="flex:1;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;">
+    <b style="color:#b45309;">Random Forest / LightGBM — stabla odluke</b>
+    Ne postoji jedna "težina" po featureu — umjesto toga, stotine malih stabala odlučuju preko niza pragova (npr. "da li je win_streak_diff &lt; -5?"), pa glasaju/usrednjavaju. Nema jedinstvene formule koja stane na papir, pa ih ovaj dokument ne razlaže korak-po-korak — koncept toka podataka (1-3 na prethodnoj strani) je identičan.
+  </div>
+</div>
+<p style="margin-top:12px;">Svi brojevi u ovom dokumentu su <b>stvarno izračunati</b> pozivanjem pokrenutog backend API-ja i direktnim čitanjem naučenih parametara iz <code>models/winner_logistic_regression.joblib</code> i <code>models/method_logistic_regression.joblib</code> — ništa nije ilustrativno/izmišljeno.</p>
+
+<div class="callout warn">
+  <b>Bitna metodološka napomena</b>
+  Ovo NIJE pokušaj da se rekonstruiše stvarni ishod meča iz oktobra 2018. na osnovu tadašnjeg znanja. Aplikacija svaki upit računa "point-in-time" u odnosu na <strong>trenutak upita (danas)</strong>, koristeći KOMPLETNU istoriju oba borca koja postoji u datasetu — uključujući i mečeve odigrane nakon stvarnog UFC 229 (npr. McGregorove mečeve protiv Poiriera i Chandlera, ili Khabibove protiv Poiriera i Gaethjea). Ovo je hipotetički upit: "da se ova dva borca danas suoče, sa kompletnom karijerom kakvu danas poznajemo."
+</div>
+
+<!-- ============ PAGE 1: FIGHTER DATA ============ -->
+<div class="section"></div>
+<h1>1. Ulazni podaci — dva borca</h1>
+<p>Korisnik u aplikaciji bira dva borca iz baze od 4455 boraca i kategoriju. Ispod su podaci koje sistem zna o svakom — <b>career statistike</b> (trenutni, kumulativni presjek iz <code>ufc_fighters_final.csv</code>, prikazuju se samo u UI-ju) i <b>point-in-time statistike</b> (rekonstruisane iz istorije mečeva, i to su jedine koje ulaze u model).</p>
+
+<div class="fighter-cards">
+  <div class="fcard a">
+    <div class="corner">Fighter A · Crveni ugao</div>
+    <h3>Conor McGregor</h3>
+    <div class="record">22&ndash;6&ndash;0 (career) · Southpaw · 38.2 god.</div>
+    <table>
+      <tr><td class="k">Visina / Raspon ruku</td><td class="v">175 cm / 188 cm (74")</td></tr>
+      <tr><td class="k">Težina</td><td class="v">155 lbs</td></tr>
+      <tr><td class="k">SLpM / Str. tačnost</td><td class="v">5.32 / 49%</td></tr>
+      <tr><td class="k">SApM / Str. odbrana</td><td class="v">4.66 / 54%</td></tr>
+      <tr><td class="k">TD prosjek / tačnost</td><td class="v">0.67 / 55%</td></tr>
+      <tr><td class="k">Sub. pokušaji / meč</td><td class="v">0.10</td></tr>
+    </table>
+    <table style="margin-top:8px;border-top:1px dashed #fca5a5;padding-top:4px;">
+      <tr><td class="k"><b>Point-in-time (u modelu):</b></td><td></td></tr>
+      <tr><td class="k">Prijašnjih mečeva</td><td class="v">14</td></tr>
+      <tr><td class="k">Pobjede / porazi</td><td class="v">10 / 4</td></tr>
+      <tr><td class="k">Trenutni niz pobjeda</td><td class="v">0</td></tr>
+      <tr><td class="k">Dana od zadnjeg meča</td><td class="v">1887</td></tr>
+      <tr><td class="k">Prosj. sig. udarci (landed/att)</td><td class="v">42.8 / 86.0</td></tr>
+      <tr><td class="k">Prosj. takedowni (landed/att)</td><td class="v">0.36 / 0.64</td></tr>
+      <tr><td class="k">Prosj. kontrola / KD</td><td class="v">59.4s / 0.93</td></tr>
+    </table>
+  </div>
+  <div class="fcard b">
+    <div class="corner">Fighter B · Plavi ugao</div>
+    <h3>Khabib Nurmagomedov</h3>
+    <div class="record">29&ndash;0&ndash;0 (career) · Orthodox · 38.0 god.</div>
+    <table>
+      <tr><td class="k">Visina / Raspon ruku</td><td class="v">178 cm / 178 cm (70")</td></tr>
+      <tr><td class="k">Težina</td><td class="v">155 lbs</td></tr>
+      <tr><td class="k">SLpM / Str. tačnost</td><td class="v">4.10 / 48%</td></tr>
+      <tr><td class="k">SApM / Str. odbrana</td><td class="v">1.75 / 65%</td></tr>
+      <tr><td class="k">TD prosjek / tačnost</td><td class="v">5.32 / 48%</td></tr>
+      <tr><td class="k">Sub. pokušaji / meč</td><td class="v">0.80</td></tr>
+    </table>
+    <table style="margin-top:8px;border-top:1px dashed #93c5fd;padding-top:4px;">
+      <tr><td class="k"><b>Point-in-time (u modelu):</b></td><td></td></tr>
+      <tr><td class="k">Prijašnjih mečeva</td><td class="v">13</td></tr>
+      <tr><td class="k">Pobjede / porazi</td><td class="v">13 / 0</td></tr>
+      <tr><td class="k">Trenutni niz pobjeda</td><td class="v">13</td></tr>
+      <tr><td class="k">Dana od zadnjeg meča</td><td class="v">2146</td></tr>
+      <tr><td class="k">Prosj. sig. udarci (landed/att)</td><td class="v">54.2 / 111.1</td></tr>
+      <tr><td class="k">Prosj. takedowni (landed/att)</td><td class="v">4.69 / 9.77</td></tr>
+      <tr><td class="k">Prosj. kontrola / KD</td><td class="v">437.0s / 0.15</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="callout info">
+  <b>Zašto se career i point-in-time brojevi razlikuju</b>
+  Career kolone (22&ndash;6 za McGregora) dolaze direktno iz <code>ufc_fighters_final.csv</code> i uključuju sve zabilježene mečeve. Point-in-time brojevi (10&ndash;4, 14 mečeva) rekonstruisani su isključivo iz mečeva koji postoje u <code>ufc_gold_dataset_final.csv</code> — samo iz njih model uopšte može izvući per-fight statistiku (udarci, takedowni, kontrola po meču), pa se koriste dosljedno svuda kao ulaz u model.
+</div>
+
+<!-- ============ PAGE 2: FEATURE VECTOR ============ -->
+<div class="section"></div>
+<h1>2. Građenje ulaznog vektora: razlika (A &minus; B)</h1>
+<p>Model nikad ne vidi "McGregorove" i "Khabibove" brojeve odvojeno — vidi samo <b>razliku</b> A&minus;B za svaki numerički feature. Ovo je namjerna arhitekturna odluka: ista razlika (npr. "borac A ima 13 mečeva manje niz pobjeda od B") znači isto bez obzira ko je fizički naveden kao "borac 1" u aplikaciji.</p>
+
+<table>
+  <tr><th>Feature</th><th class="num">Conor (A)</th><th class="num">Khabib (B)</th><th class="num">Razlika (A&minus;B)</th></tr>
+  <tr><td>height_in &mdash; visina (inch)</td><td class="num">69.0</td><td class="num">70.0</td><td class="num">&minus;1.0</td></tr>
+  <tr><td>reach_in &mdash; raspon ruku (inch)</td><td class="num">74.0</td><td class="num">70.0</td><td class="num">+4.0</td></tr>
+  <tr><td>weight_lbs &mdash; težina</td><td class="num">155.0</td><td class="num">155.0</td><td class="num">0.0</td></tr>
+  <tr><td>age_years &mdash; starost (danas)</td><td class="num">38.15</td><td class="num">37.97</td><td class="num">+0.19</td></tr>
+  <tr><td>prior_fight_count &mdash; broj prijašnjih mečeva</td><td class="num">14</td><td class="num">13</td><td class="num">+1</td></tr>
+  <tr><td>prior_wins &mdash; prijašnje pobjede</td><td class="num">10</td><td class="num">13</td><td class="num">&minus;3</td></tr>
+  <tr><td>prior_losses &mdash; prijašnji porazi</td><td class="num">4</td><td class="num">0</td><td class="num">+4</td></tr>
+  <tr><td>win_streak &mdash; trenutni niz pobjeda</td><td class="num">0</td><td class="num">13</td><td class="num">&minus;13</td></tr>
+  <tr><td>days_since_last_fight</td><td class="num">1887</td><td class="num">2146</td><td class="num">&minus;259</td></tr>
+  <tr><td>prior_avg_sig_landed &mdash; prosj. pogođeni udarci</td><td class="num">42.79</td><td class="num">54.23</td><td class="num">&minus;11.45</td></tr>
+  <tr><td>prior_avg_sig_att &mdash; prosj. pokušani udarci</td><td class="num">86.00</td><td class="num">111.08</td><td class="num">&minus;25.08</td></tr>
+  <tr><td>prior_avg_td_landed &mdash; prosj. uspješni takedowni</td><td class="num">0.357</td><td class="num">4.692</td><td class="num">&minus;4.34</td></tr>
+  <tr><td>prior_avg_td_att &mdash; prosj. pokušaji takedowna</td><td class="num">0.643</td><td class="num">9.769</td><td class="num">&minus;9.13</td></tr>
+  <tr><td>prior_avg_sub_att &mdash; prosj. pokušaji submissiona</td><td class="num">0.071</td><td class="num">0.692</td><td class="num">&minus;0.62</td></tr>
+  <tr><td>prior_avg_ctrl_sec &mdash; prosj. kontrola (sek)</td><td class="num">59.4</td><td class="num">437.0</td><td class="num">&minus;377.6</td></tr>
+  <tr><td>prior_avg_kd &mdash; prosj. knockdowni</td><td class="num">0.929</td><td class="num">0.154</td><td class="num">+0.77</td></tr>
+</table>
+
+<h3>+ Kategorijski i binarni featurei (dodati bez razlike, svaki kao 0/1 kolona)</h3>
+<table>
+  <tr><th>Feature</th><th>Vrijednost za ovaj meč</th></tr>
+  <tr><td>stance_a</td><td>Southpaw &rarr; kolona <code>stance_a_Southpaw = 1</code>, sve ostale stance_a_* kolone = 0</td></tr>
+  <tr><td>stance_b</td><td>Orthodox &rarr; kolona <code>stance_b_Orthodox = 1</code></td></tr>
+  <tr><td>weight_class</td><td>Lightweight &rarr; kolona <code>weight_class_Lightweight = 1</code></td></tr>
+  <tr><td>is_title_fight</td><td>1 (title fight uključen)</td></tr>
+  <tr><td>reach_missing_a/b, height_missing_a/b, weight_missing_a/b, is_debut_a/b</td><td>svi 0 &mdash; oba borca imaju kompletne podatke i nijedan nije debitant</td></tr>
+</table>
+<p>Konačan vektor ima <b>51 kolonu</b> (16 numeričkih razlika + 34 one-hot/flag kolone) &mdash; identičan raspored kolona koji su modeli vidjeli tokom treniranja, spašen u <code>models/feature_columns.json</code>, da bi svaki live upit bio poravnat sa onim na čemu je model treniran.</p>
+
+<div class="callout">
+  <b>Nema curenja podataka (data leakage)</b>
+  Ni jedna od ovih vrijednosti nije izmjerena TOKOM meča koji se predviđa &mdash; sve dolaze iz mečeva koji su se već desili PRIJE trenutka upita. Kolone poput "sig. udarci pogođeni" računaju se kao prosjek isključivo iz ranijih mečeva (cumsum-minus-current trik), nikad iz meča koji je predmet predikcije.
+</div>
+
+<!-- ============ PAGE 3: STANDARDIZATION + WINNER MODEL ============ -->
+<div class="section"></div>
+<h1>3. Standardizacija i Winner model &mdash; računanje</h1>
+<p>Prije nego što uđu u model, sve numeričke vrijednosti se <b>standardizuju</b> (z-score) &mdash; svaka se transformiše u "koliko standardnih devijacija je udaljena od prosjeka", koristeći prosjek i devijaciju izračunate na svih 16754 redova trening skupa. Ovo sprječava da featurei s prirodno velikim brojevima (npr. kontrola u sekundama, do &plusmn;380) dominiraju nad onima s malim rasponom (npr. razlika u godinama, &plusmn;0.2) samo zbog skale.</p>
+
+<div class="formula-box">
+  <div class="label">Standardizacija</div>
+  z = (x &minus; &mu;) / &sigma;
+</div>
+
+<div class="formula-box">
+  <div class="label">Logistic regression &mdash; winner model</div>
+  logit = &sum;(težina<sub>i</sub> &times; z<sub>i</sub>) + intercept &nbsp;&nbsp;&nbsp;&nbsp; P(A pobjeđuje) = 1 / (1 + e<sup>&minus;logit</sup>)
+</div>
+
+<p>Svaki feature (nakon standardizacije) množi se sa svojom naučenom težinom &mdash; to je "koliko taj podatak utiče na predikciju, i u kom smjeru". Doprinosi se zbroje, doda se intercept (kod winner modela &asymp; 0), i rezultat (logit) se protisne kroz sigmoid funkciju koja ga pretvori u vjerovatnoću 0&ndash;1.</p>
+
+<h3>Doprinos svakog featurea logitu (crveno = ide u prilog McGregoru, plavo = ide u prilog Khabibu)</h3>
+
+<div class="tornado-legend"><span><i style="background:#b91c1c;"></i>favorizuje McGregora (A)</span><span><i style="background:#1e40af;"></i>favorizuje Khabiba (B)</span></div>
+
+<div class="tornado-row"><div class="tornado-label">win_streak_diff</div><div class="tornado-mid"><div class="tornado-left"><div class="tornado-bar neg" style="width:130px;"></div></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&minus;0.728</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_avg_td_landed_diff</div><div class="tornado-mid"><div class="tornado-left"><div class="tornado-bar neg" style="width:82px;"></div></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&minus;0.457</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_losses_diff</div><div class="tornado-mid"><div class="tornado-left"><div class="tornado-bar neg" style="width:64px;"></div></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&minus;0.356</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_avg_td_att_diff</div><div class="tornado-mid"><div class="tornado-left"><div class="tornado-bar neg" style="width:58px;"></div></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&minus;0.325</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_avg_ctrl_sec_diff</div><div class="tornado-mid"><div class="tornado-left"></div><div class="tornado-centerline"></div><div class="tornado-right"><div class="tornado-bar pos" style="width:52px;"></div></div></div><div class="tornado-value">+0.293</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_wins_diff</div><div class="tornado-mid"><div class="tornado-left"><div class="tornado-bar neg" style="width:33px;"></div></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&minus;0.184</div></div>
+<div class="tornado-row"><div class="tornado-label">reach_in_diff</div><div class="tornado-mid"><div class="tornado-left"></div><div class="tornado-centerline"></div><div class="tornado-right"><div class="tornado-bar pos" style="width:28px;"></div></div></div><div class="tornado-value">+0.159</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_avg_kd_diff</div><div class="tornado-mid"><div class="tornado-left"></div><div class="tornado-centerline"></div><div class="tornado-right"><div class="tornado-bar pos" style="width:27px;"></div></div></div><div class="tornado-value">+0.150</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_avg_sig_landed_diff</div><div class="tornado-mid"><div class="tornado-left"><div class="tornado-bar neg" style="width:24px;"></div></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&minus;0.133</div></div>
+<div class="tornado-row"><div class="tornado-label">prior_avg_sig_att_diff</div><div class="tornado-mid"><div class="tornado-left"></div><div class="tornado-centerline"></div><div class="tornado-right"><div class="tornado-bar pos" style="width:18px;"></div></div></div><div class="tornado-value">+0.100</div></div>
+<div class="tornado-row"><div class="tornado-label">stance_a_Southpaw</div><div class="tornado-mid"><div class="tornado-left"></div><div class="tornado-centerline"></div><div class="tornado-right"><div class="tornado-bar pos" style="width:10px;"></div></div></div><div class="tornado-value">+0.057</div></div>
+<div class="tornado-row"><div class="tornado-label">preostalih 6 featurea</div><div class="tornado-mid"><div class="tornado-left"></div><div class="tornado-centerline"></div><div class="tornado-right"></div></div><div class="tornado-value">&lt; &plusmn;0.04</div></div>
+
+<div class="callout warn" style="margin-top:10px;">
+  <b>Zašto je prior_avg_ctrl_sec_diff "pozitivan" iako Khabib kontroliše duže</b>
+  Predznak pojedinačne težine se ne smije čitati izolovano/uzročno &mdash; featurei su međusobno korelisani (kontrola je usko povezana s uspješnim takedownima, koji već imaju svoj, jači, negativni doprinos). Model raspoređuje "kredit" između korelisanih featura na način koji ponekad djeluje kontraintuitivno feature-po-feature, iako je ukupan zbir ispravan i dobro kalibrisan.
+</div>
+
+<h3>Zbrajanje i konačna vjerovatnoća</h3>
+<table>
+  <tr><td>Zbir svih doprinosa (&sum; težina &times; z)</td><td class="num">&minus;1.3989</td></tr>
+  <tr><td>+ intercept</td><td class="num">&asymp; 0.0000</td></tr>
+  <tr><td><b>= logit</b></td><td class="num"><b>&minus;1.3989</b></td></tr>
+</table>
+
+<svg viewBox="0 0 620 230" width="100%" style="max-width:560px;display:block;margin:8px auto;">
+  <polyline points="40.0,209.5 51.7,209.4 63.3,209.2 75.0,209.0 86.7,208.7 98.3,208.3 110.0,207.8 121.7,207.2 133.3,206.4 145.0,205.4 156.7,204.1 168.3,202.5 180.0,200.5 191.7,198.0 203.3,194.8 215.0,190.9 226.7,186.2 238.3,180.4 250.0,173.5 261.7,165.5 273.3,156.2 285.0,145.8 296.7,134.5 308.3,122.4 320.0,110.0 331.7,97.6 343.3,85.5 355.0,74.2 366.7,63.8 378.3,54.5 390.0,46.5 401.7,39.6 413.3,33.8 425.0,29.1 436.7,25.2 448.3,22.0 460.0,19.5 471.7,17.5 483.3,15.9 495.0,14.6 506.7,13.6 518.3,12.8 530.0,12.2 541.7,11.7 553.3,11.3 565.0,11.0 576.7,10.8 588.3,10.6 600.0,10.5"
+    fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+  <line x1="40" y1="210" x2="600" y2="210" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="10" x2="40" y2="210" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="254.7" y1="10" x2="254.7" y2="170.4" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="40" y1="170.4" x2="254.7" y2="170.4" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+  <circle cx="254.7" cy="170.4" r="4.5" fill="#b91c1c"/>
+  <text x="258" y="167" font-size="11" fill="#b91c1c" font-weight="700">logit = &minus;1.40 &rarr; P = 20.3%</text>
+  <text x="10" y="14" font-size="9" fill="#888">P=1</text>
+  <text x="10" y="213" font-size="9" fill="#888">P=0</text>
+  <text x="580" y="222" font-size="9" fill="#888">logit</text>
+</svg>
+
+<div class="bignum">
+  <div class="bn" style="background:#1e40af;">
+    <div class="p">79.7%</div>
+    <div class="l">Khabib Nurmagomedov pobjeđuje</div>
+  </div>
+  <div class="bn" style="background:#b91c1c;">
+    <div class="p">20.3%</div>
+    <div class="l">Conor McGregor pobjeđuje</div>
+  </div>
+</div>
+
+<!-- ============ PAGE 4: METHOD MODEL ============ -->
+<div class="section"></div>
+<h1>4. Method model &mdash; računanje (3 paralelna izračuna)</h1>
+<p>Method model rješava drugačiji problem &mdash; 3 klase (KO/TKO, Submission, Decision) umjesto 2. Zato Logistic Regression ovdje interno drži <b>tri odvojena seta težina</b>, po jedan za svaku klasu, i svaki set nezavisno računa svoj logit <i>iz istog standardizovanog vektora</i> koji smo vidjeli na prošloj strani.</p>
+
+<div class="formula-box">
+  <div class="label">Softmax &mdash; pretvara 3 logita u 3 vjerovatnoće koje seberu na 100%</div>
+  P(klasa c) = e<sup>logit<sub>c</sub></sup> / &sum;<sub>c'</sub> e<sup>logit<sub>c'</sub></sup>
+</div>
+
+<div class="flowbox-row">
+  <div class="flowbox decision"><div class="t">Decision</div>logit = &minus;0.156</div>
+  <div class="flowarrow">&#8594;</div>
+  <div class="flowbox ko"><div class="t">KO / TKO</div>logit = +0.002</div>
+  <div class="flowarrow">&#8594;</div>
+  <div class="flowbox sub"><div class="t">Submission</div>logit = +0.153</div>
+</div>
+<div style="text-align:center;margin:10px 0;"><span class="flowarrow" style="font-size:20px;">&#8595;</span></div>
+<div style="text-align:center;"><span class="softbox">SOFTMAX normalizacija</span></div>
+<div style="text-align:center;margin:10px 0;"><span class="flowarrow" style="font-size:20px;">&#8595;</span></div>
+
+<div class="probbar-row"><div class="probbar-label">Submission</div><div class="probbar-track"><div class="probbar-fill" style="width:74.8%;background:#0f766e;">37.4%</div></div><div class="probbar-value">37.4%</div></div>
+<div class="probbar-row"><div class="probbar-label">KO / TKO</div><div class="probbar-track"><div class="probbar-fill" style="width:65.7%;background:#b91c1c;">32.8%</div></div><div class="probbar-value">32.8%</div></div>
+<div class="probbar-row"><div class="probbar-label">Decision</div><div class="probbar-track"><div class="probbar-fill" style="width:59.5%;background:#6d28d9;">29.7%</div></div><div class="probbar-value">29.7%</div></div>
+
+<h3>Koji featurei zapravo grade ova tri logita?</h3>
+<table>
+  <tr><th>Feature</th><th class="num">z-score</th><th class="num">w (Decision)</th><th class="num">w (KO/TKO)</th><th class="num">w (Submission)</th></tr>
+  <tr><td>is_title_fight</td><td class="num">4.131</td><td class="num">&minus;0.0414</td><td class="num">+0.0242</td><td class="num">+0.0172</td></tr>
+  <tr><td>weight_class_Lightweight</td><td class="num">2.190</td><td class="num">&minus;0.0050</td><td class="num">&minus;0.0297</td><td class="num">+0.0347</td></tr>
+  <tr><td>stance_a_Southpaw</td><td class="num">2.034</td><td class="num">+0.0101</td><td class="num">&minus;0.0079</td><td class="num">&minus;0.0022</td></tr>
+  <tr><td>stance_b_Orthodox</td><td class="num">0.590</td><td class="num">+0.0118</td><td class="num">&minus;0.0085</td><td class="num">&minus;0.0033</td></tr>
+  <tr><td style="color:#999;">prior_avg_sig_landed_diff <i>(i svih 14 preostalih numeričkih diff-ova)</i></td><td class="num" style="color:#999;">&minus;0.415</td><td class="num" style="color:#999;">&asymp; 0.0000000000006</td><td class="num" style="color:#999;">&asymp; &minus;0.00000000000001</td><td class="num" style="color:#999;">&asymp; &minus;0.0000000000005</td></tr>
+</table>
+<p style="font-size:10.5px;color:#666;">Svih 15&ndash;16 numeričkih "diff" featurea (starost, forma, udarci, takedowni, kontrola...) imaju težinu praktično jednaku nuli za sve tri klase Method modela &mdash; vidi zašto na sljedećoj strani.</p>
+
+<!-- ============ PAGE 5: KEY FINDING ============ -->
+<div class="section"></div>
+<h1>5. Ključni nalaz: zašto Method model "ignoriše" statistiku borbe</h1>
+<p>Ovo nije greška ni slučajnost &mdash; direktna je matematička posljedica jedne odluke iz treniranja, verifikovana direktno na trening podacima (16754 redova).</p>
+
+<div class="callout finding">
+  <b>Augmentacija zamjenom strana (spomenuta u odjeljku 5 PROJECT_CONTEXT.md)</b>
+  Svaki meč ulazi u trening skup DVA puta: jednom kao (A&minus;B, label) i jednom kao (B&minus;A, label) &mdash; da bi Winner model naučio da redoslijed borac1/borac2 ne smije uticati na predikciju. Efekat te iste augmentacije na Method model je suptilan: <code>method_class</code> (KO/TKO, Submission, Decision) se <strong>ne mijenja</strong> kad se strane zamjene &mdash; isti meč, isti ishod-po-metodi, bez obzira ko je "A". Ali svaka numerička <code>_diff</code> kolona mijenja predznak (+11 postaje &minus;11).
+</div>
+
+<p>Rezultat: za svaki numerički feature i svaku klasu metode, prosjek te kolone po klasi je <b>tačno nula</b> (izmjereno direktno na podacima, ne teorijski):</p>
+
+<table>
+  <tr><th>method_class</th><th class="num">prosjek prior_avg_sig_landed_diff</th><th class="num">broj redova</th></tr>
+  <tr><td>Decision</td><td class="num">0.0000000000000000036</td><td class="num">7874</td></tr>
+  <tr><td>KO_TKO</td><td class="num">0.0000000000000000077</td><td class="num">5570</td></tr>
+  <tr><td>Submission</td><td class="num">0.0000000000000000000</td><td class="num">3310</td></tr>
+</table>
+
+<p>Kad su prosjeci po klasama identični (svi &asymp; 0), jednosmjerna ANOVA (koja mjeri koliko se prosjeci RAZLIKUJU između klasa) ne nalazi baš nikakav signal &mdash; F-statistika izlazi &asymp; 0.00000000000000000000000000008, sa p-vrijednošću tačno 1.0 (potpuno beznačajno). Logistic Regression (linearan model) matematički <b>mora</b> konvergirati ka težini &asymp; 0 za takve featurese, jer bilo koja druga težina bi kažnjavala model na jednom od dva "ogledalna" reda istog meča.</p>
+
+<div class="callout warn">
+  <b>Posljedica za UI aplikacije</b>
+  Panel "top featurei" koji app prikazuje za Method model (ANOVA feature importance, globalno &mdash; nezavisno od konkretnog para boraca) trenutno na vrhu liste ističe baš <code>prior_avg_sig_landed_diff</code> (score 100/100). Prema gornjoj analizi, taj broj je zapravo numerički šum između featurea koji su SVI podjednako (potpuno) nesignifikantni za ovaj target &mdash; ne stvarna najvažnija varijabla. Stvarni, upotrebljivi signal za Method kod Logistic Regression dolazi od featurea koji NE mijenjaju predznak pri zamjeni strana: <code>is_title_fight</code>, <code>weight_class_*</code>, i stance kolone.
+</div>
+
+<h3>Potvrda brojkama: prosječna |težina| po grupi featurea i modelu</h3>
+<div class="grp-compare">
+  <div class="gc">
+    <div class="grp-title">Winner model</div>
+    <div class="gc-row"><div class="gc-label">Numerički diff-ovi</div><div class="gc-track"><div class="gc-fill winner" style="width:100%;"></div></div><div class="gc-val">0.1467</div></div>
+    <div class="gc-row"><div class="gc-label">Kategorijski/flag</div><div class="gc-track"><div class="gc-fill winner" style="width:30%;"></div></div><div class="gc-val">0.0445</div></div>
+  </div>
+  <div class="gc">
+    <div class="grp-title">Method model</div>
+    <div class="gc-row"><div class="gc-label">Numerički diff-ovi</div><div class="gc-track"><div class="gc-fill method" style="width:0.1%;"></div></div><div class="gc-val">0.00000000000025</div></div>
+    <div class="gc-row"><div class="gc-label">Kategorijski/flag</div><div class="gc-track"><div class="gc-fill method" style="width:76%;"></div></div><div class="gc-val">0.0353</div></div>
+  </div>
+</div>
+<p style="font-size:10.5px;color:#666;">Kod Winner modela numerički featurei nose gotovo 3&times; veću prosječnu težinu od kategorijskih. Kod Method modela je obrnuto &mdash; numerički featurei su praktično na nuli, kategorijski/flag featurei nose (skoro) sav stvarni signal.</p>
+
+<div class="callout info">
+  <b>Nelinearni modeli (Random Forest, LightGBM) ovom problemu nisu podložni</b>
+  Stablo odluke može direktno pitati "da li je |prior_avg_sig_landed_diff| veliko?" kroz kombinaciju dva prага (jedan za pozitivne, jedan za negativne vrijednosti), pa augmentacija zamjenom strana ne prisiljava njihove numeričke featurese ka nuli na isti način. Ovo je vjerovatno i razlog zašto je u ranijoj evaluaciji Random Forest imao najvišu accuracy za Method cilj (50.2%) uprkos nižem macro-F1.
+</div>
+
+<!-- ============ PAGE 6: SUMMARY ============ -->
+<div class="section"></div>
+<h1>6. Sažetak i ograničenja</h1>
+
+<h3>Konačan rezultat za ovaj upit (Logistic Regression)</h3>
+<div class="bignum">
+  <div class="bn" style="background:#1e40af;">
+    <div class="p">79.7%</div>
+    <div class="l">Khabib pobjeđuje</div>
+  </div>
+  <div class="bn" style="background:#6d28d9;">
+    <div class="p">29.7%</div>
+    <div class="l">... Decision-om</div>
+  </div>
+  <div class="bn" style="background:#b91c1c;">
+    <div class="p">32.8%</div>
+    <div class="l">... KO / TKO-om</div>
+  </div>
+  <div class="bn" style="background:#0f766e;">
+    <div class="p">37.4%</div>
+    <div class="l">... Submissionom</div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <b>Method predikcija ne kaže KO pobjeđuje na taj način</b>
+  Kao što je već ranije razjašnjeno u razgovoru: "37.4% Submission" je vjerovatnoća da se MEČ generalno završi submissionom &mdash; ne "37.4% da Khabib pobijedi submissionom". Winner i Method model su statistički nezavisni; Method model ne zna šta je Winner model predvidio, niti čak ko je "pobjednik" u ovom konkretnom upitu.
+</div>
+
+<h3>Ostala ograničenja ovog prikaza</h3>
+<ul style="font-size:11px;">
+  <li>Prikazan je isključivo <b>Logistic Regression</b> put; Random Forest i LightGBM prolaze kroz iste korake 1&ndash;3 (feature vektor, standardizacija za RF nije ni potrebna jer stabla ne zavise od skale featura, ali pipeline je ostao konzistentan), a zatim kroz stotine stabala umjesto eksplicitnih težina.</li>
+  <li>Metrike modela prikazane u aplikaciji (accuracy, log-loss, cross-validation) odnose se na CIJELI test skup (3352 mečeva), ne na ovaj konkretan par boraca &mdash; ne postoji garancija da je baš OVA predikcija tačna.</li>
+  <li>Age_years se računa u odnosu na DANAŠNJI datum (2026), ne na datum stvarnog meča iz 2018 &mdash; vidi napomenu u odjeljku 0.</li>
+  <li>7 imena boraca u datasetu (0.3%) su duplikati različitih osoba; McGregor i Khabib nisu među njima (podatak provjeren u analizi projekta).</li>
+</ul>
+
+<div class="footer-note">
+  UFC Fight Predictor &middot; svi brojevi u ovom dokumentu izvučeni su direktno iz pokrenute aplikacije (backend API na 127.0.0.1:8000) i naučenih model artefakata (<code>models/*.joblib</code>), septembar 2026.
+</div>
+
+</body>
+</html>
