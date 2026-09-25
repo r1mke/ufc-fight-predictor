@@ -16,7 +16,8 @@ import {
   triggerRetrain,
   triggerScrape,
 } from "@/lib/api";
-import type { JobStatus, ModelVersion, PendingFight } from "@/types";
+import type { JobStatus, ModelVariant, ModelVersion, PendingFight } from "@/types";
+import { MODEL_VARIANT_LABELS } from "@/types";
 
 // Admin page is free access for now - the backend doesn't check this value,
 // it's only kept because the API functions take a token argument.
@@ -274,10 +275,13 @@ export default function AdminPage() {
                 <p className="font-medium">
                   {v.version_id} {v.is_current && <Badge className="ml-2">current</Badge>}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Winner (LightGBM) acc: {v.metrics_summary.winner?.lightgbm?.accuracy?.toFixed(3) ?? "—"} ·
-                  {" "}Method (LightGBM) acc: {v.metrics_summary.method?.lightgbm?.accuracy?.toFixed(3) ?? "—"}
-                </p>
+                {(Object.keys(v.metrics_summary) as ModelVariant[]).map((variant) => (
+                  <p key={variant} className="text-xs text-muted-foreground">
+                    {MODEL_VARIANT_LABELS[variant] ?? variant} — Winner (LightGBM) acc:{" "}
+                    {v.metrics_summary[variant]?.winner?.lightgbm?.accuracy?.toFixed(3) ?? "—"} ·
+                    {" "}Method (LightGBM) acc: {v.metrics_summary[variant]?.method?.lightgbm?.accuracy?.toFixed(3) ?? "—"}
+                  </p>
+                ))}
               </div>
               {!v.is_current && (
                 <Button

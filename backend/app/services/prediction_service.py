@@ -4,10 +4,16 @@ import joblib
 import pandas as pd
 
 from app.config import DEFAULT_MODEL_VARIANT, MODEL_NAMES, MODEL_VARIANTS, TARGETS, models_dir_for
-from app.ml.features import build_pairwise_row, build_pairwise_row_concat, encode_features
+from app.ml.features import (
+    build_pairwise_row, build_pairwise_row_combined, build_pairwise_row_concat, encode_features,
+)
 from app.services.fighter_service import FighterService, get_fighter_service
 
-ROW_BUILDERS = {"diff": build_pairwise_row, "concat": build_pairwise_row_concat}
+ROW_BUILDERS = {
+    "diff": build_pairwise_row,
+    "concat": build_pairwise_row_concat,
+    "combined": build_pairwise_row_combined,
+}
 
 
 class _VariantModels:

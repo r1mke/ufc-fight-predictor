@@ -11,14 +11,6 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function pct(value: number | null): string {
-  return value == null ? "—" : `${(value * 100).toFixed(0)}%`;
-}
-
-function num(value: number | null, digits = 1): string {
-  return value == null ? "—" : value.toFixed(digits);
-}
-
 export function FighterCard({ fighter }: { fighter: FighterDetail }) {
   return (
     <Card>
@@ -43,17 +35,6 @@ export function FighterCard({ fighter }: { fighter: FighterDetail }) {
           <Stat label="Stance" value={fighter.stance} />
           <Stat label="Weight" value={fighter.weight_lbs ? `${fighter.weight_lbs} lbs` : "—"} />
           <Stat label="UFC fights" value={String(fighter.fight_count)} />
-        </div>
-        <div className="border-t pt-3">
-          <p className="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-            Career stats
-          </p>
-          <div className="grid grid-cols-4 gap-3">
-            <Stat label="Str/min" value={num(fighter.career_stats.slpm)} />
-            <Stat label="Str Acc" value={pct(fighter.career_stats.str_acc)} />
-            <Stat label="TD Avg" value={num(fighter.career_stats.td_avg)} />
-            <Stat label="Sub Avg" value={num(fighter.career_stats.sub_avg)} />
-          </div>
         </div>
         {(fighter.reach_missing || fighter.height_missing) && (
           <p className="text-[11px] text-muted-foreground">

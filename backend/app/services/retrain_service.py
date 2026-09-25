@@ -1,7 +1,8 @@
 """Orchestrates a full retrain: archive the current models, approve the
 selected pending fights into the raw dataset, rebuild the cleaned data and
-training table (now including the newly-approved fights), retrain all 6
-models, and hot-reload the running services - no server restart needed.
+training table (now including the newly-approved fights), retrain all models
+for every feature-engineering variant (diff/concat/combined), and hot-reload
+the running services - no server restart needed.
 
 Only one retrain can run at a time (in-memory flag); good enough for a
 single-process, single-admin deployment.
@@ -11,6 +12,7 @@ import threading
 import traceback
 from datetime import datetime, timezone
 
+from app.config import MODEL_NAMES, MODEL_VARIANTS, TARGETS
 from app.schemas import RetrainStatus
 from app.services import model_version_service, submission_service
 from app.services.fighter_service import reset_instance as reset_fighter_service
@@ -48,17 +50,22 @@ def run_retrain(pending_ids: list[str]) -> None:
         from app.ml import data_pipeline, features, train
 
         data_pipeline.run()
-        features.build_and_save()
-        train.run()
+        for variant in MODEL_VARIANTS:
+            features.build_and_save(variant=variant)
+            train.run(variant=variant)
 
         reset_fighter_service()
         reset_prediction_service()
 
+        model_count = len(MODEL_VARIANTS) * len(MODEL_NAMES) * len(TARGETS)
         _status = RetrainStatus(
             status="done",
             started_at=_status.started_at,
             finished_at=datetime.now(timezone.utc).isoformat(),
-            result_summary=f"Approved {approved_count} fight(s); retrained 6 models (3 model types x 2 targets).",
+            result_summary=(
+                f"Approved {approved_count} fight(s); retrained {model_count} models "
+                f"({len(MODEL_NAMES)} model types x {len(TARGETS)} targets x {len(MODEL_VARIANTS)} variants)."
+            ),
         )
     except Exception as exc:
         _status = RetrainStatus(

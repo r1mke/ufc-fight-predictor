@@ -51,9 +51,8 @@ export function Glossary() {
           <AccordionTrigger>Prediction factors</AccordionTrigger>
           <AccordionContent>
             <p className="mb-3 text-sm text-muted-foreground">
-              These are the pre-fight statistics the models compare between the two fighters. Each
-              one shown under &ldquo;Most influential factors&rdquo; is the (Fighter A − Fighter B)
-              difference in:
+              These are the pre-fight statistics the models compare between the two fighters, as
+              the (Fighter A − Fighter B) difference in:
             </p>
             <GlossaryList entries={FEATURE_ENTRIES} />
           </AccordionContent>

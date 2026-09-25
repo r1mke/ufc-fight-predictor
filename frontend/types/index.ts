@@ -42,12 +42,14 @@ export const MODEL_LABELS: Record<ModelName, string> = {
 // Feature-engineering variant: how a fighter matchup is turned into model
 // input. "diff" (default, production) subtracts fighter B's stats from
 // fighter A's; "concat" (experimental) keeps both fighters' stats as separate
-// columns and lets the model learn its own comparison.
-export type ModelVariant = "diff" | "concat";
+// columns and lets the model learn its own comparison; "combined"
+// (experimental) gives the model both the diff AND the separate columns.
+export type ModelVariant = "diff" | "concat" | "combined";
 
 export const MODEL_VARIANT_LABELS: Record<ModelVariant, string> = {
   diff: "Standard (A − B difference)",
   concat: "Experimental (side-by-side stats)",
+  combined: "Experimental (diff + side-by-side)",
 };
 
 export interface ModelMetrics {
@@ -186,7 +188,9 @@ export interface ModelVersion {
   version_id: string;
   created_at: string;
   is_current: boolean;
-  metrics_summary: Record<string, Record<string, { accuracy: number; log_loss: number }>>;
+  // Keyed by ModelVariant ("diff" / "concat" / "combined"); a variant is
+  // absent if it hadn't been trained yet when this version was saved.
+  metrics_summary: Record<string, Record<string, Record<string, { accuracy: number; log_loss: number }>>>;
 }
 
 export interface ModelVersionsResponse {

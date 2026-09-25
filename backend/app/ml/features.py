@@ -263,6 +263,28 @@ def build_pairwise_row_concat(a_stats: dict, b_stats: dict) -> dict:
     return row
 
 
+def build_pairwise_row_combined(a_stats: dict, b_stats: dict) -> dict:
+    """Union of build_pairwise_row() and build_pairwise_row_concat(): both the
+    pre-computed (a - b) diff AND the separate raw fighter_a/fighter_b values.
+    Used by the "combined" variant."""
+    row = {}
+    for feat in DIFF_NUMERIC_FEATURES:
+        row[f"{feat}_diff"] = a_stats[feat] - b_stats[feat]
+        row[f"{feat}_a"] = a_stats[feat]
+        row[f"{feat}_b"] = b_stats[feat]
+    row["stance_a"] = a_stats["stance"]
+    row["stance_b"] = b_stats["stance"]
+    row["reach_missing_a"] = a_stats["reach_missing"]
+    row["reach_missing_b"] = b_stats["reach_missing"]
+    row["height_missing_a"] = a_stats["height_missing"]
+    row["height_missing_b"] = b_stats["height_missing"]
+    row["weight_missing_a"] = a_stats["weight_missing"]
+    row["weight_missing_b"] = b_stats["weight_missing"]
+    row["is_debut_a"] = a_stats["is_debut"]
+    row["is_debut_b"] = b_stats["is_debut"]
+    return row
+
+
 ALL_FEATURE_COLUMNS = [f"{f}_diff" for f in DIFF_NUMERIC_FEATURES] + CATEGORICAL_FEATURES + FLAG_FEATURES
 
 # Alternative feature schema: same underlying per-fighter numbers, but given to
@@ -276,7 +298,22 @@ ALL_FEATURE_COLUMNS_CONCAT = (
     + FLAG_FEATURES
 )
 
-FEATURE_COLUMNS_BY_VARIANT = {"diff": ALL_FEATURE_COLUMNS, "concat": ALL_FEATURE_COLUMNS_CONCAT}
+# Union schema: both the diff columns and the separate a/b columns. See
+# build_pairwise_row_combined() and variant="combined" on
+# build_training_table()/build_and_save().
+ALL_FEATURE_COLUMNS_COMBINED = (
+    [f"{f}_diff" for f in DIFF_NUMERIC_FEATURES]
+    + [f"{f}_a" for f in DIFF_NUMERIC_FEATURES]
+    + [f"{f}_b" for f in DIFF_NUMERIC_FEATURES]
+    + CATEGORICAL_FEATURES
+    + FLAG_FEATURES
+)
+
+FEATURE_COLUMNS_BY_VARIANT = {
+    "diff": ALL_FEATURE_COLUMNS,
+    "concat": ALL_FEATURE_COLUMNS_CONCAT,
+    "combined": ALL_FEATURE_COLUMNS_COMBINED,
+}
 
 
 def encode_features(df: pd.DataFrame, reference_columns=None):
@@ -308,7 +345,9 @@ def build_training_table(fighters_clean: pd.DataFrame, fights_clean: pd.DataFram
 
     variant="diff" (default, unchanged): numeric features are (a - b) differences.
     variant="concat": numeric features are fighter_a and fighter_b raw values,
-    kept separate instead of pre-subtracted."""
+    kept separate instead of pre-subtracted.
+    variant="combined": numeric features are both the (a - b) differences AND
+    the separate fighter_a/fighter_b raw values."""
     if variant not in FEATURE_COLUMNS_BY_VARIANT:
         raise ValueError(f"unknown variant: {variant}")
     history_long = build_history_long(fights_clean)

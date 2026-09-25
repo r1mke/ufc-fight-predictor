@@ -32,7 +32,7 @@ interface Props {
 }
 
 const MODEL_NAMES: ModelName[] = ["logistic_regression", "random_forest", "lightgbm"];
-const MODEL_VARIANTS: ModelVariant[] = ["diff", "concat"];
+const MODEL_VARIANTS: ModelVariant[] = ["diff", "concat", "combined"];
 
 export function CompareForm({ onPredict, loading }: Props) {
   const [fighter1, setFighter1] = useState<FighterSummary | null>(null);

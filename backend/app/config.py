@@ -36,7 +36,10 @@ METHOD_CLASSES = ["KO_TKO", "Submission", "Decision"]
 # "diff": current production approach, (fighter_a - fighter_b) numeric features.
 # "concat": experimental - fighter_a and fighter_b numeric features kept
 #   separate instead of pre-subtracted, so the model learns its own comparison.
-MODEL_VARIANTS = ["diff", "concat"]
+# "combined": experimental - both the (a - b) diff features AND the separate
+#   fighter_a/fighter_b raw features, so the model gets the pre-computed
+#   comparison as well as the raw values to derive its own from.
+MODEL_VARIANTS = ["diff", "concat", "combined"]
 DEFAULT_MODEL_VARIANT = "diff"
 
 
